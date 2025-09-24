@@ -41,6 +41,8 @@ const resultBody = document.querySelector('#result .result-body');
 
 let activeMarker = null;
 let leafletMap = null;
+let startPicker = null;
+let endPicker = null;
 
 const MAX_LEAFLET_ATTEMPTS = 20;
 const LEAFLET_RETRY_DELAY_MS = 150;
@@ -134,6 +136,11 @@ function markMapUnavailable(message) {
 }
 
 
+function setDateInvalidState(picker, invalid) {
+  if (!picker || !picker.altInput) return;
+  picker.altInput.classList.toggle('is-invalid', invalid);
+}
+
 function placeMarker(lat, lon) {
   if (!leafletMap) return;
   const coords = [lat, lon];
@@ -202,6 +209,88 @@ function initMap() {
   });
 }
 
+function initDatePickers() {
+  const startInput = document.getElementById('start_date');
+  const endInput = document.getElementById('end_date');
+  if (!startInput || !endInput) return;
+
+  if (typeof flatpickr === 'undefined') {
+    startInput.type = 'date';
+    endInput.type = 'date';
+    return;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const maxDate = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+
+  const sharedConfig = {
+    altInput: true,
+    altFormat: 'd.m.Y',
+    dateFormat: 'Y-m-d',
+    allowInput: true,
+    disableMobile: true,
+    locale: 'de',
+    maxDate,
+  };
+
+  startPicker = flatpickr(startInput, {
+    ...sharedConfig,
+    onChange: (selectedDates, dateStr) => {
+      if (endPicker) {
+        endPicker.set('minDate', dateStr || null);
+        if (selectedDates.length && endPicker.selectedDates.length && endPicker.selectedDates[0] < selectedDates[0]) {
+          endPicker.clear();
+        }
+      }
+      validateForm();
+    },
+    onClose: () => validateForm(),
+    onValueUpdate: () => validateForm(),
+  });
+
+  endPicker = flatpickr(endInput, {
+    ...sharedConfig,
+    onChange: (selectedDates, dateStr) => {
+      if (startPicker) {
+        const newMax = dateStr || maxDate;
+        startPicker.set('maxDate', newMax);
+        if (selectedDates.length) {
+          const selectedEnd = selectedDates[0];
+          const currentStart = startPicker.selectedDates[0];
+          if (!currentStart || currentStart > selectedEnd) {
+            startPicker.setDate(selectedEnd, false);
+          }
+        }
+      }
+      validateForm();
+    },
+    onClose: () => validateForm(),
+    onValueUpdate: () => validateForm(),
+  });
+
+  if (startPicker && startInput.value) {
+    startPicker.setDate(startInput.value, false);
+    endPicker.set('minDate', startInput.value);
+  }
+
+  if (endPicker && endInput.value) {
+    endPicker.setDate(endInput.value, false);
+    startPicker.set('maxDate', endInput.value);
+  }
+
+  const linkedInputs = [];
+  if (startPicker && startPicker.altInput) linkedInputs.push(startPicker.altInput);
+  if (endPicker && endPicker.altInput) linkedInputs.push(endPicker.altInput);
+  linkedInputs.forEach((input) => {
+    input.setAttribute('autocomplete', 'off');
+    input.setAttribute('placeholder', 'TT.MM.JJJJ');
+    input.classList.add('date-field');
+  });
+
+  validateForm();
+}
+
 function validateForm() {
   let ok = true;
 
@@ -229,10 +318,12 @@ function validateForm() {
   const startValid = startVal && startPast;
   toggleClass(start, 'is-invalid', !startValid);
   toggleClass(startErr, 'hidden', startValid);
+  setDateInvalidState(startPicker, !startValid);
 
   const endValid = endVal && endPast && orderOk;
   toggleClass(end, 'is-invalid', !endValid);
   toggleClass(endErr, 'hidden', endValid);
+  setDateInvalidState(endPicker, !endValid);
 
   if (!startValid || !endValid) ok = false;
   return ok;
@@ -240,7 +331,9 @@ function validateForm() {
 
 function showLoading(on) {
   const overlay = document.getElementById('loading_overlay');
-  toggleClass(overlay, 'hidden', !on);
+  if (!overlay) return;
+  overlay.classList.toggle('is-visible', on);
+  overlay.setAttribute('aria-hidden', String(!on));
 }
 
 function initRadiusSlider() {
@@ -287,7 +380,9 @@ function setupAnalyzeButton() {
 
 (async function boot() {
   initRadiusSlider();
+  initDatePickers();
   setupAnalyzeButton();
+  validateForm();
   try {
     await ensureLeafletReady();
     initMap();
