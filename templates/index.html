@@ -4,85 +4,130 @@
     <meta charset="utf-8">
     <title>Wetter-Auswertung</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            base: '#0f172a',
+                            accent: '#a3e635',
+                            soft: '#1e293b'
+                        }
+                    },
+                    fontFamily: {
+                        display: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui']
+                    }
+                }
+            }
+        };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="anonymous">
+
+    <script defer
+            src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/de.js"></script>
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 </head>
-<body class="bg-light">
-<div id="loading_overlay" class="loading-overlay d-none">
-    <div class="loading-box">
-        <div class="spinner-border" role="status" aria-hidden="true"></div>
-        <div class="mt-3 fw-medium">Wetterdaten-Analyse läuft …</div>
+<body class="min-h-screen bg-slate-950 text-slate-100 font-display antialiased">
+<div id="loading_overlay" class="loading-overlay" aria-hidden="true">
+    <div class="loading-overlay__box">
+        <div class="loading-overlay__spinner"></div>
+        <p class="loading-overlay__text">Wetterdaten werden vorbereitet ...</p>
     </div>
 </div>
-<div class="container py-4">
-    <div class="p-3 border rounded-4 bg-white">
-        <header class="mb-3 text-muted small">www.romanswetter.io</header>
 
-        <main class="row g-4">
-            <!-- Left column -->
-            <section class="col-12 col-lg-5">
-                <div class="card mb-3">
-                    <div class="card-body position-relative">
-                        <!-- Address card body ... -->
-                        <label for="address_1" class="form-label">Standort (Adresse)</label>
-                        <input id="address_1" type="text" class="form-control" autocomplete="off"
-                               placeholder="Musterstraße 1, 12345 Musterstadt">
-                        <input id="address_lat" type="hidden">
-                        <input id="address_lon" type="hidden">
-                        <input id="address_country" type="hidden"> <!-- store country_code -->
+<div class="relative">
+    <div class="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-10 px-6 py-10 md:px-12">
+        <header class="flex flex-col gap-2">
+            <p class="text-xs uppercase tracking-[0.35em] text-lime-300/80">romanswetter.io</p>
+            <h1 class="text-3xl font-semibold text-white md:text-4xl">Präzise Wetteranalysen für deinen perfekten Spot</h1>
+            <p class="max-w-3xl text-sm text-slate-300 md:text-base">Setze den Pin direkt auf deinen Lieblingsort in Deutschland, wähle Radius und Zeitraum und
+                erhalte datengetriebene Insights in Sekunden.</p>
+        </header>
 
-                        <div id="address_suggestions" class="list-group suggestions-popover d-none"></div>
-
-                        <div id="address_error" class="invalid-feedback d-block d-none">
-                            Bitte wähle eine Adresse aus der Liste (nur Deutschland).
-                        </div>
-                    </div>
+        <main class="grid flex-1 gap-10 pb-12 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+            <section class="space-y-6">
+                <div class="rounded-3xl border border-white/10 bg-slate-900/60 p-1 shadow-[0_25px_60px_-25px_rgba(15,23,42,0.7)]">
+                    <div id="map" class="h-[340px] w-full overflow-hidden rounded-[calc(theme(borderRadius.3xl)-0.25rem)] bg-slate-950 sm:h-[420px]"></div>
                 </div>
 
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <label for="radius" class="form-label d-flex justify-content-between">
-                            <span>Radius (km)</span><span><span id="radius_value">25</span> km</span>
-                        </label>
-                        <input id="radius" type="range" class="form-range" min="1" max="50" value="25">
-                    </div>
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <dl class="rounded-2xl border border-white/5 bg-slate-900/70 p-4">
+                        <dt class="text-xs uppercase tracking-wide text-slate-400">Breite</dt>
+                        <dd id="coord_lat" class="text-lg font-semibold text-slate-300">--</dd>
+                    </dl>
+                    <dl class="rounded-2xl border border-white/5 bg-slate-900/70 p-4">
+                        <dt class="text-xs uppercase tracking-wide text-slate-400">Laenge</dt>
+                        <dd id="coord_lon" class="text-lg font-semibold text-slate-300">--</dd>
+                    </dl>
+                    <dl class="rounded-2xl border border-white/5 bg-slate-900/70 p-4">
+                        <dt class="text-xs uppercase tracking-wide text-slate-400">Region</dt>
+                        <dd id="coord_region" class="text-lg font-semibold text-slate-300">Noch keine Auswahl</dd>
+                    </dl>
                 </div>
 
-                <div class="row g-3">
-                    <div class="col-12 col-md-6">
-                        <div class="card h-100">
-                            <div class="card-body">
-                                <input id="start_date" type="date" class="form-control">
-                                <div id="start_error" class="invalid-feedback d-block d-none">
-                                    Startdatum muss in der Vergangenheit liegen.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="card h-100">
-                            <div class="card-body">
-                                <input id="end_date" type="date" class="form-control">
-                                <div id="end_error" class="invalid-feedback d-block d-none">
-                                    Enddatum muss in der Vergangenheit liegen und ≥ Startdatum.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div id="coord_error" class="hidden rounded-2xl border border-red-500/50 bg-red-500/10 p-4 text-sm text-red-200">
+                    Bitte platziere den Pin innerhalb Deutschlands.
                 </div>
+
+                <input id="address_lat" type="hidden">
+                <input id="address_lon" type="hidden">
+                <input id="address_country" type="hidden" value="">
             </section>
 
-            <!-- Right column -->
-            <section class="col-12 col-lg-7 d-flex flex-column align-items-center gap-3">
-                <div class="display-3 opacity-75 text-center">
-                    <span class="me-2">☀️</span><span class="me-2">☁️</span><span>💧</span>
+            <section class="flex flex-col gap-6">
+                <div class="rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-[0_25px_60px_-25px_rgba(15,23,42,0.7)]">
+                    <div class="space-y-6">
+                        <div>
+                            <div class="mb-2 flex items-center justify-between text-sm font-medium text-slate-300">
+                                <span>Radius</span>
+                                <span><span id="radius_value" class="text-lime-300">25</span> km</span>
+                            </div>
+                            <input id="radius" type="range" class="w-full accent-lime-400" min="1" max="50" value="25">
+                            <div class="mt-2 flex justify-between text-xs text-slate-500">
+                                <span>1 km</span>
+                                <span>50 km</span>
+                            </div>
+                        </div>
+
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <label class="flex flex-col gap-2 text-sm font-medium text-slate-300">
+                                <span>Startdatum</span>
+                                <input id="start_date" type="date"
+                                       class="w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-slate-100 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/60">
+                                <span id="start_error" class="hidden text-xs font-normal text-red-300">Startdatum muss in der Vergangenheit liegen.</span>
+                            </label>
+                            <label class="flex flex-col gap-2 text-sm font-medium text-slate-300">
+                                <span>Enddatum</span>
+                                <input id="end_date" type="date"
+                                       class="w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-slate-100 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/60">
+                                <span id="end_error"
+                                      class="hidden text-xs font-normal text-red-300">Enddatum muss vor heute liegen und nach dem Startdatum.</span>
+                            </label>
+                        </div>
+
+                        <button id="analyze_btn"
+                                class="w-full rounded-2xl bg-gradient-to-r from-lime-400 via-emerald-400 to-sky-400 px-6 py-3 text-base font-semibold text-slate-950 transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-lime-300/40">
+                            Auswertung starten
+                        </button>
+                    </div>
                 </div>
 
-                <button id="analyze_btn" class="btn btn-outline-dark btn-lg px-4">Auswertung</button>
-
-                <div id="result" class="card w-100">
-                    <div class="card-body text-center text-body" style="min-height: 110px;">
+                <div id="result" class="flex-1 rounded-3xl border border-white/10 bg-slate-900/60 p-6">
+                    <div class="result-body h-full rounded-2xl border border-dashed border-white/10 bg-slate-950/40 px-4 py-6 text-center text-sm text-slate-400"
+                         style="min-height: 120px;">
                         Ergebnis erscheint hier.
                     </div>
                 </div>
@@ -91,8 +136,6 @@
     </div>
 </div>
 
-<!-- Bootstrap Bundle (optional for JS utilities, not required for our custom code) -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
 </body>
 </html>
