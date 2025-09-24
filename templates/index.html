@@ -40,7 +40,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/de.js"></script>
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 </head>
-<body class="min-h-screen bg-slate-950 text-slate-100 font-display antialiased">
+<body class="theme-dark min-h-screen bg-slate-950 text-slate-100 font-display antialiased">
 <div id="loading_overlay" class="loading-overlay" aria-hidden="true">
     <div class="loading-overlay__box">
         <div class="loading-overlay__spinner"></div>
@@ -50,12 +50,19 @@
 
 <div class="relative">
     <div class="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-10 px-6 py-10 md:px-12">
-        <header class="flex flex-col gap-2">
-            <p class="text-xs uppercase tracking-[0.35em] text-lime-300/80">romanswetter.io</p>
-            <h1 class="text-3xl font-semibold text-white md:text-4xl">Präzise Wetteranalysen für deinen perfekten Spot</h1>
-            <p class="max-w-3xl text-sm text-slate-300 md:text-base">Setze den Pin direkt auf deinen Lieblingsort in Deutschland, wähle Radius und Zeitraum und
-                erhalte datengetriebene Insights in Sekunden.</p>
-        </header>
+        <div class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+            <header class="flex flex-col gap-2">
+                <p class="text-xs uppercase tracking-[0.35em] text-lime-300/80">romanswetter.io</p>
+                <h1 class="text-3xl font-semibold text-white md:text-4xl">Präzise Wetteranalysen für deinen perfekten Spot</h1>
+                <p class="max-w-3xl text-sm text-slate-300 md:text-base">Setze den Pin direkt auf deinen Lieblingsort in Deutschland, wähle Radius und Zeitraum und erhalte datengetriebene Insights in Sekunden.</p>
+            </header>
+            <button id="theme_toggle" type="button" class="theme-toggle self-start md:self-center" aria-pressed="true" aria-label="Darstellung zwischen Hell- und Dunkelmodus wechseln">
+                <span class="theme-toggle__track">
+                    <span class="theme-toggle__thumb"></span>
+                </span>
+                <span class="theme-toggle__text">Dunkel</span>
+            </button>
+        </div>
 
         <main class="grid flex-1 gap-10 pb-12 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
             <section class="space-y-6">
@@ -105,14 +112,14 @@
                         <div class="grid gap-4 sm:grid-cols-2">
                             <label class="flex flex-col gap-2 text-sm font-medium text-slate-300">
                                 <span>Startdatum</span>
-                                <input id="start_date" type="date"
-                                       class="w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-slate-100 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/60">
+                                <input id="start_date" type="text"
+                                       class="date-input w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-slate-100 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/60" placeholder="TT.MM.JJJJ" autocomplete="off">
                                 <span id="start_error" class="hidden text-xs font-normal text-red-300">Startdatum muss in der Vergangenheit liegen.</span>
                             </label>
                             <label class="flex flex-col gap-2 text-sm font-medium text-slate-300">
                                 <span>Enddatum</span>
-                                <input id="end_date" type="date"
-                                       class="w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-slate-100 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/60">
+                                <input id="end_date" type="text"
+                                       class="date-input w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-slate-100 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/60" placeholder="TT.MM.JJJJ" autocomplete="off">
                                 <span id="end_error"
                                       class="hidden text-xs font-normal text-red-300">Enddatum muss vor heute liegen und nach dem Startdatum.</span>
                             </label>

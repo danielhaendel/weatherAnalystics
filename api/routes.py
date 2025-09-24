@@ -49,6 +49,58 @@ def places_autocomplete():
 
     return jsonify({'items': items})
 
+
+@api_bp.get('/reverse_geocode')
+def reverse_geocode():
+    require_api_key()
+    try:
+        lat = float(request.args.get('lat'))
+        lon = float(request.args.get('lon'))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'invalid coordinates'}), 400
+
+    url = 'https://api.geoapify.com/v1/geocode/reverse'
+    params = {
+        'lat': lat,
+        'lon': lon,
+        'limit': 1,
+        'lang': 'de',
+        'apiKey': GEOAPIFY_KEY,
+    }
+    try:
+        resp = requests.get(url, params=params, timeout=10)
+        resp.raise_for_status()
+    except requests.RequestException:
+        return jsonify({'error': 'lookup_failed'}), 502
+
+    data = resp.json()
+    features = data.get('features', [])
+    if not features:
+        return jsonify({
+            'city': None,
+            'town': None,
+            'village': None,
+            'municipality': None,
+            'county': None,
+            'state': None,
+            'country': None,
+            'country_code': None,
+        })
+
+    props = features[0].get('properties', {})
+    payload = {
+        'city': props.get('city'),
+        'town': props.get('town'),
+        'village': props.get('village'),
+        'municipality': props.get('municipality'),
+        'county': props.get('county'),
+        'state': props.get('state'),
+        'country': props.get('country'),
+        'country_code': props.get('country_code'),
+    }
+    return jsonify(payload)
+
+
 @api_bp.get('/validate_address')
 def validate_address():
     """Validate a full address string by forward geocoding once."""

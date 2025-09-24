@@ -44,6 +44,13 @@ let leafletMap = null;
 let startPicker = null;
 let endPicker = null;
 
+const REGION_LOADING_TEXT = "Ort wird geladen ...";
+const REGION_DEFAULT_TEXT = "Deutschland";
+const REGION_EMPTY_TEXT = "Noch keine Auswahl";
+const THEME_STORAGE_KEY = "weather_theme_preference";
+
+let regionLookupSeq = 0;
+
 const MAX_LEAFLET_ATTEMPTS = 20;
 const LEAFLET_RETRY_DELAY_MS = 150;
 let leafletFallbackInjected = false;
@@ -86,6 +93,38 @@ function formatCoordinate(value, axis) {
   return `${Math.abs(value).toFixed(4)}\u00B0 ${direction}`;
 }
 
+
+
+function setRegionLabel(text) {
+  if (!regionLabel) return;
+  regionLabel.textContent = text;
+}
+
+async function resolveRegionName(lat, lon) {
+  if (!regionLabel) return;
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+
+  regionLookupSeq += 1;
+  const lookupId = regionLookupSeq;
+  setRegionLabel(REGION_LOADING_TEXT);
+
+  try {
+    const resp = await fetch(`/api/reverse_geocode?lat=${lat}&lon=${lon}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (lookupId !== regionLookupSeq) return;
+
+    const city = data.city || data.town || data.village || data.municipality || data.county || data.state;
+    const label = city ? `${city}, ${REGION_DEFAULT_TEXT}` : REGION_DEFAULT_TEXT;
+    setRegionLabel(label);
+  } catch (err) {
+    if (lookupId === regionLookupSeq) {
+      setRegionLabel(REGION_DEFAULT_TEXT);
+    }
+    console.error('Failed to resolve region name', err);
+  }
+}
+
 function updateCoordinateSummary(lat, lon) {
   const fixedLat = Number(lat.toFixed(6));
   const fixedLon = Number(lon.toFixed(6));
@@ -94,16 +133,17 @@ function updateCoordinateSummary(lat, lon) {
   countryField.value = 'de';
   if (latLabel) latLabel.textContent = formatCoordinate(fixedLat, 'lat');
   if (lonLabel) lonLabel.textContent = formatCoordinate(fixedLon, 'lon');
-  if (regionLabel) regionLabel.textContent = 'Deutschland';
+  resolveRegionName(fixedLat, fixedLon);
 }
 
 function resetCoordinateSummary() {
+  regionLookupSeq += 1;
   latField.value = '';
   lonField.value = '';
   countryField.value = '';
   if (latLabel) latLabel.textContent = '--';
   if (lonLabel) lonLabel.textContent = '--';
-  if (regionLabel) regionLabel.textContent = 'Noch keine Auswahl';
+  setRegionLabel(REGION_EMPTY_TEXT);
 }
 
 function showCoordinateError(message) {
@@ -291,6 +331,79 @@ function initDatePickers() {
   validateForm();
 }
 
+function getStoredTheme() {
+  try {
+    const stored = window.localStorage?.getItem(THEME_STORAGE_KEY);
+    if (stored === 'light' || stored === 'dark') return stored;
+  } catch (err) {
+    console.warn('Theme storage unavailable', err);
+  }
+  return null;
+}
+
+function setStoredTheme(theme) {
+  try {
+    window.localStorage?.setItem(THEME_STORAGE_KEY, theme);
+  } catch (err) {
+    console.warn('Theme storage unavailable', err);
+  }
+}
+
+function updateThemeToggleUI(theme) {
+  const toggle = document.getElementById('theme_toggle');
+  if (!toggle) return;
+  const isLight = theme === 'light';
+  toggle.classList.toggle('is-light', isLight);
+  toggle.setAttribute('aria-pressed', String(!isLight));
+  toggle.setAttribute('aria-label', isLight
+    ? 'Darstellung: Hellmodus aktiv (zum Umschalten klicken)'
+    : 'Darstellung: Dunkelmodus aktiv (zum Umschalten klicken)');
+  const textEl = toggle.querySelector('.theme-toggle__text');
+  if (textEl) textEl.textContent = isLight ? 'Hell' : 'Dunkel';
+}
+
+function applyTheme(theme, { skipSave = false } = {}) {
+  const body = document.body;
+  if (!body) return;
+  const normalized = theme === 'light' ? 'light' : 'dark';
+  body.classList.remove('theme-dark', 'theme-light');
+  body.classList.add(`theme-${normalized}`);
+  updateThemeToggleUI(normalized);
+  if (!skipSave) {
+    setStoredTheme(normalized);
+  }
+}
+
+function initThemeToggle() {
+  const toggle = document.getElementById('theme_toggle');
+  const storedTheme = getStoredTheme();
+  const mediaQuery = typeof window.matchMedia === 'function'
+    ? window.matchMedia('(prefers-color-scheme: dark)')
+    : null;
+  const initialTheme = storedTheme || (mediaQuery && mediaQuery.matches ? 'dark' : 'light');
+  applyTheme(initialTheme, { skipSave: !storedTheme });
+
+  if (toggle) {
+    toggle.addEventListener('click', () => {
+      const isDark = document.body.classList.contains('theme-dark');
+      const nextTheme = isDark ? 'light' : 'dark';
+      applyTheme(nextTheme);
+    });
+  }
+
+  if (mediaQuery) {
+    const handler = (event) => {
+      if (getStoredTheme()) return;
+      applyTheme(event.matches ? 'dark' : 'light', { skipSave: true });
+    };
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handler);
+    } else if (typeof mediaQuery.addListener === 'function') {
+      mediaQuery.addListener(handler);
+    }
+  }
+}
+
 function validateForm() {
   let ok = true;
 
@@ -355,8 +468,11 @@ function setupAnalyzeButton() {
       return;
     }
 
+    const regionText = regionLabel?.textContent || 'Koordinaten';
+    const addressLabel = regionText === REGION_LOADING_TEXT ? REGION_DEFAULT_TEXT : regionText;
+
     const payload = {
-      address_1: regionLabel?.textContent || 'Koordinaten',
+      address_1: addressLabel,
       lat: parseFloat(latField.value),
       lon: parseFloat(lonField.value),
       country_code: (countryField.value || '').toLowerCase(),
@@ -379,6 +495,7 @@ function setupAnalyzeButton() {
 }
 
 (async function boot() {
+  initThemeToggle();
   initRadiusSlider();
   initDatePickers();
   setupAnalyzeButton();
