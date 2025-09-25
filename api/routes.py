@@ -41,7 +41,7 @@ def places_autocomplete():
             'lon': p.get('lon'),
             'city': p.get('city'),
             'country': p.get('country'),
-            'country_code': p.get('country_code'),  # <— add this
+            'country_code': p.get('country_code'),
             'postcode': p.get('postcode'),
             'street': p.get('street'),
             'housenumber': p.get('housenumber'),
