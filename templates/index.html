@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="de">
+<html lang="{{ ui['html_lang'] }}">
 <head>
     <meta charset="utf-8">
-    <title>Wetter-Auswertung</title>
+    <title>{{ ui['title'] }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
     <script>
@@ -37,14 +37,16 @@
             crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/de.js"></script>
+    {% if js_strings['flatpickrLocale'] not in ['default', 'en', ''] %}
+    <script defer src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/{{ js_strings['flatpickrLocale'] }}.js"></script>
+    {% endif %}
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 </head>
 <body class="theme-dark min-h-screen bg-slate-950 text-slate-100 font-display antialiased">
 <div id="loading_overlay" class="loading-overlay" aria-hidden="true">
     <div class="loading-overlay__box">
         <div class="loading-overlay__spinner"></div>
-        <p class="loading-overlay__text">Wetterdaten werden vorbereitet ...</p>
+        <p class="loading-overlay__text">{{ ui['loading_overlay'] }}</p>
     </div>
 </div>
 
@@ -52,16 +54,52 @@
     <div class="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-10 px-6 py-10 md:px-12">
         <div class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
             <header class="flex flex-col gap-2">
-                <p class="text-xs uppercase tracking-[0.35em] text-lime-300/80">romanswetter.io</p>
-                <h1 class="text-3xl font-semibold text-white md:text-4xl">Präzise Wetteranalysen für deinen perfekten Spot</h1>
-                <p class="max-w-3xl text-sm text-slate-300 md:text-base">Setze den Pin direkt auf deinen Lieblingsort in Deutschland, wähle Radius und Zeitraum und erhalte datengetriebene Insights in Sekunden.</p>
+                <p class="text-xs uppercase tracking-[0.35em] text-lime-300/80">{{ ui['header_tagline'] }}</p>
+                <h1 class="text-3xl font-semibold text-white md:text-4xl">{{ ui['headline'] }}</h1>
+                <p class="max-w-3xl text-sm text-slate-300 md:text-base">{{ ui['subheadline'] }}</p>
             </header>
-            <button id="theme_toggle" type="button" class="theme-toggle self-start md:self-center" aria-pressed="true" aria-label="Darstellung zwischen Hell- und Dunkelmodus wechseln">
-                <span class="theme-toggle__track">
-                    <span class="theme-toggle__thumb"></span>
-                </span>
-                <span class="theme-toggle__text">Dunkel</span>
-            </button>
+            <div class="flex items-center gap-3 self-start md:self-center">
+                <button id="sync_button" type="button" class="sync-button">
+                    {{ ui['sync_button'] }}
+                </button>
+
+                <div class="language-picker" data-language-picker>
+                    <span class="sr-only">{{ ui['language_select_aria'] }}</span>
+                    <button id="language_menu_button" type="button" class="language-picker__button" aria-haspopup="listbox" aria-expanded="false">
+                        <span class="language-picker__flag" aria-hidden="true">{{ current_language_option['flag']|safe }}</span>
+                        <span class="language-picker__label">{{ current_language_option['label'] }}</span>
+                        <svg class="language-picker__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="m6 9 6 6 6-6" />
+                        </svg>
+                    </button>
+
+                    <div id="language_menu" class="language-menu hidden" role="listbox" aria-labelledby="language_menu_button">
+                        {% for language in languages %}
+                            <button type="button" class="language-menu__item {% if language['code'] == current_language %}is-active{% endif %}" data-lang="{{ language['code'] }}" role="option" {% if language['code'] == current_language %}aria-selected="true"{% else %}aria-selected="false"{% endif %}>
+                                <span class="language-menu__flag" aria-hidden="true">{{ language['flag']|safe }}</span>
+                                <span class="language-menu__text">{{ language['label'] }}</span>
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+                <button id="theme_toggle" type="button" class="theme-toggle" aria-pressed="true" aria-label="{{ ui['theme_toggle_label'] }}">
+                    <span class="sr-only">{{ ui['theme_toggle_label'] }}</span>
+                    <svg class="theme-toggle__icon" data-icon="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M21 12.79A9 9 0 0 1 11.21 3 7 7 0 1 0 21 12.79z" />
+                    </svg>
+                    <svg class="theme-toggle__icon hidden" data-icon="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="4" />
+                        <path d="M12 2v2" />
+                        <path d="M12 20v2" />
+                        <path d="m4.93 4.93 1.41 1.41" />
+                        <path d="m17.66 17.66 1.41 1.41" />
+                        <path d="M2 12h2" />
+                        <path d="M20 12h2" />
+                        <path d="m6.34 17.66-1.41 1.41" />
+                        <path d="m19.07 4.93-1.41 1.41" />
+                    </svg>
+                </button>
+            </div>
         </div>
 
         <main class="grid flex-1 gap-10 pb-12 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
@@ -72,21 +110,21 @@
 
                 <div class="grid gap-4 sm:grid-cols-3">
                     <dl class="rounded-2xl border border-white/5 bg-slate-900/70 p-4">
-                        <dt class="text-xs uppercase tracking-wide text-slate-400">Breite</dt>
+                        <dt class="text-xs uppercase tracking-wide text-slate-400">{{ ui['coord_lat_label'] }}</dt>
                         <dd id="coord_lat" class="text-lg font-semibold text-slate-300">--</dd>
                     </dl>
                     <dl class="rounded-2xl border border-white/5 bg-slate-900/70 p-4">
-                        <dt class="text-xs uppercase tracking-wide text-slate-400">Laenge</dt>
+                        <dt class="text-xs uppercase tracking-wide text-slate-400">{{ ui['coord_lon_label'] }}</dt>
                         <dd id="coord_lon" class="text-lg font-semibold text-slate-300">--</dd>
                     </dl>
                     <dl class="rounded-2xl border border-white/5 bg-slate-900/70 p-4">
-                        <dt class="text-xs uppercase tracking-wide text-slate-400">Region</dt>
-                        <dd id="coord_region" class="text-lg font-semibold text-slate-300">Noch keine Auswahl</dd>
+                        <dt class="text-xs uppercase tracking-wide text-slate-400">{{ ui['coord_region_label'] }}</dt>
+                        <dd id="coord_region" class="text-lg font-semibold text-slate-300">{{ ui['coord_region_placeholder'] }}</dd>
                     </dl>
                 </div>
 
                 <div id="coord_error" class="hidden rounded-2xl border border-red-500/50 bg-red-500/10 p-4 text-sm text-red-200">
-                    Bitte platziere den Pin innerhalb Deutschlands.
+                    {{ ui['coord_error'] }}
                 </div>
 
                 <input id="address_lat" type="hidden">
@@ -99,35 +137,35 @@
                     <div class="space-y-6">
                         <div>
                             <div class="mb-2 flex items-center justify-between text-sm font-medium text-slate-300">
-                                <span>Radius</span>
+                                <span>{{ ui['radius_label'] }}</span>
                                 <span><span id="radius_value" class="text-lime-300">25</span> km</span>
                             </div>
                             <input id="radius" type="range" class="w-full accent-lime-400" min="1" max="50" value="25">
                             <div class="mt-2 flex justify-between text-xs text-slate-500">
-                                <span>1 km</span>
-                                <span>50 km</span>
+                                <span>{{ ui['radius_min'] }}</span>
+                                <span>{{ ui['radius_max'] }}</span>
                             </div>
                         </div>
 
                         <div class="grid gap-4 sm:grid-cols-2">
                             <label class="flex flex-col gap-2 text-sm font-medium text-slate-300">
-                                <span>Startdatum</span>
+                                <span>{{ ui['start_date_label'] }}</span>
                                 <input id="start_date" type="text"
-                                       class="date-input w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-slate-100 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/60" placeholder="TT.MM.JJJJ" autocomplete="off">
-                                <span id="start_error" class="hidden text-xs font-normal text-red-300">Startdatum muss in der Vergangenheit liegen.</span>
+                                       class="date-input w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-slate-100 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/60" placeholder="{{ js_strings['datePlaceholder'] }}" autocomplete="off">
+                                <span id="start_error" class="hidden text-xs font-normal text-red-300">{{ ui['start_date_error'] }}</span>
                             </label>
                             <label class="flex flex-col gap-2 text-sm font-medium text-slate-300">
-                                <span>Enddatum</span>
+                                <span>{{ ui['end_date_label'] }}</span>
                                 <input id="end_date" type="text"
-                                       class="date-input w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-slate-100 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/60" placeholder="TT.MM.JJJJ" autocomplete="off">
+                                       class="date-input w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-slate-100 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/60" placeholder="{{ js_strings['datePlaceholder'] }}" autocomplete="off">
                                 <span id="end_error"
-                                      class="hidden text-xs font-normal text-red-300">Enddatum muss vor heute liegen und nach dem Startdatum.</span>
+                                      class="hidden text-xs font-normal text-red-300">{{ ui['end_date_error'] }}</span>
                             </label>
                         </div>
 
                         <button id="analyze_btn"
                                 class="w-full rounded-2xl bg-gradient-to-r from-lime-400 via-emerald-400 to-sky-400 px-6 py-3 text-base font-semibold text-slate-950 transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-lime-300/40">
-                            Auswertung starten
+                            {{ ui['analyze_button'] }}
                         </button>
                     </div>
                 </div>
@@ -135,7 +173,7 @@
                 <div id="result" class="flex-1 rounded-3xl border border-white/10 bg-slate-900/60 p-6">
                     <div class="result-body h-full rounded-2xl border border-dashed border-white/10 bg-slate-950/40 px-4 py-6 text-center text-sm text-slate-400"
                          style="min-height: 120px;">
-                        Ergebnis erscheint hier.
+                        {{ ui['result_placeholder'] }}
                     </div>
                 </div>
             </section>
@@ -143,6 +181,13 @@
     </div>
 </div>
 
+<script>
+    window.APP_I18N = {
+        lang: {{ current_language|tojson }},
+        js: {{ js_strings|tojson }}
+    };
+</script>
+<div id="toast_container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
 </body>
 </html>

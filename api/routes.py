@@ -1,13 +1,36 @@
 # api/routes.py
 import os
-import requests
-from flask import Blueprint, request, jsonify, abort
-from datetime import date
 import time
+from datetime import date
+
+import requests
+from flask import Blueprint, request, jsonify, abort, current_app
+
+from dwd_sync import sync_dwd_data
 
 api_bp = Blueprint('api', __name__)
 
 GEOAPIFY_KEY = os.environ.get('GEOAPIFY_KEY', '')
+
+
+def get_translations():
+    return current_app.config.get('APP_TRANSLATIONS', {})
+
+
+def normalize_lang(lang_value) -> str:
+    lang = (lang_value or '').lower()
+    translations = get_translations()
+    supported = current_app.config.get('APP_SUPPORTED_LANGUAGES')
+    default_lang = current_app.config.get('APP_DEFAULT_LANGUAGE')
+    if not default_lang:
+        default_lang = next(iter(translations.keys()), 'de')
+
+    if supported and lang in supported:
+        return lang
+    if lang in translations:
+        return lang
+    return default_lang
+
 
 def require_api_key() -> None:
     if not GEOAPIFY_KEY:
@@ -19,6 +42,7 @@ def places_autocomplete():
     require_api_key()
     q = (request.args.get('q') or '').strip()
     country = (request.args.get('country') or 'de').lower()
+    lang = normalize_lang(request.args.get('lang'))
     if not q:
         return jsonify({'items': []})
     url = 'https://api.geoapify.com/v1/geocode/autocomplete'
@@ -26,8 +50,8 @@ def places_autocomplete():
         'text': q,
         'limit': 7,
         'filter': f'countrycode:{country}',
+        'lang': lang,
         'apiKey': GEOAPIFY_KEY,
-        # Optional: 'lang': 'de'
     }
     r = requests.get(url, params=params, timeout=10)
     r.raise_for_status()
@@ -60,11 +84,12 @@ def reverse_geocode():
         return jsonify({'error': 'invalid coordinates'}), 400
 
     url = 'https://api.geoapify.com/v1/geocode/reverse'
+    lang = normalize_lang(request.args.get('lang'))
     params = {
         'lat': lat,
         'lon': lon,
         'limit': 1,
-        'lang': 'de',
+        'lang': lang,
         'apiKey': GEOAPIFY_KEY,
     }
     try:
@@ -133,6 +158,7 @@ def analyze():
     country_code = (data.get('country_code') or '').lower()
     start_date = data.get('start_date')
     end_date = data.get('end_date')
+    request_lang = normalize_lang(data.get('lang'))
 
     # Basic validations
     errors = []
@@ -160,8 +186,40 @@ def analyze():
         return jsonify({'ok': False, 'errors': errors}), 400
 
     # Replace with real analysis
+    translations = get_translations()
+    summary_template = translations.get(request_lang, {}).get('messages', {}).get('analysis_summary')
+    if not summary_template:
+        summary_template = translations.get('de', {}).get('messages', {}).get('analysis_summary')
+    if not summary_template:
+        summary_template = 'Analysis for coordinates ({lat}, {lon}) in DE from {start} to {end}.'
+
     result = {
         'ok': True,
-        'summary': f'Auswertung für Koordinaten ({lat}, {lon}) in DE von {start_date} bis {end_date}.'
+        'summary': summary_template.format(lat=lat, lon=lon, start=start_date, end=end_date),
     }
     return jsonify(result), 200
+
+
+@api_bp.post('/sync_stations')
+def sync_stations():
+    """Trigger a refresh of station metadata from the DWD feed."""
+    current_app.logger.info('API sync_stations called.')
+    try:
+        result = sync_dwd_data(current_app, include_weather=False, raise_errors=True)
+    except Exception as err:  # pragma: no cover - defensive
+        current_app.logger.exception('Station sync failed: %s', err)
+        return jsonify({'ok': False, 'error': str(err)}), 500
+
+    stations = result.get('stations', {}) if isinstance(result, dict) else {}
+    message = stations.get('message') or ('downloaded' if stations.get('downloaded') else 'unknown')
+    current_app.logger.info('Station sync result: downloaded=%s rows=%s message=%s',
+                            stations.get('downloaded'), stations.get('rows_processed'), message)
+    payload = {
+        'ok': True,
+        'stations': {
+            'downloaded': bool(stations.get('downloaded')),
+            'rows_processed': stations.get('rows_processed', 0),
+            'message': message,
+        },
+    }
+    return jsonify(payload), 200
