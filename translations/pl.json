@@ -14,6 +14,10 @@
     "coord_lon_label": "Długość",
     "coord_region_label": "Region",
     "coord_region_placeholder": "Brak wyboru",
+    "coord_region_meta_default": "Niemcy",
+    "coord_coordinates_label": "Współrzędne",
+    "region_station_heading": "Najbliższa stacja pogodowa",
+    "region_station_unknown": "Brak danych o stacji",
     "coord_error": "Umieść znacznik na terenie Niemiec.",
     "radius_label": "Promień",
     "radius_min": "1 km",
@@ -61,7 +65,9 @@
     "syncListingEmpty": "Źródło danych jest obecnie niedostępne.",
     "syncError": "Aktualizacja nie powiodła się",
     "syncErrorDetails": "Nie udało się odświeżyć danych stacji",
-    "toastCloseAria": "Zamknij powiadomienie"
+    "toastCloseAria": "Zamknij powiadomienie",
+    "regionStationUnknown": "Brak danych o stacji",
+    "regionStationDistance": "Odległość do stacji: {distance} km"
   },
   "messages": {
     "analysis_summary": "Analiza dla współrzędnych ({lat}, {lon}) w DE od {start} do {end}."

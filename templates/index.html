@@ -108,19 +108,34 @@
                     <div id="map" class="h-[340px] w-full overflow-hidden rounded-[calc(theme(borderRadius.3xl)-0.25rem)] bg-slate-950 sm:h-[420px]"></div>
                 </div>
 
-                <div class="grid gap-4 sm:grid-cols-3">
-                    <dl class="rounded-2xl border border-white/5 bg-slate-900/70 p-4">
-                        <dt class="text-xs uppercase tracking-wide text-slate-400">{{ ui['coord_lat_label'] }}</dt>
-                        <dd id="coord_lat" class="text-lg font-semibold text-slate-300">--</dd>
-                    </dl>
-                    <dl class="rounded-2xl border border-white/5 bg-slate-900/70 p-4">
-                        <dt class="text-xs uppercase tracking-wide text-slate-400">{{ ui['coord_lon_label'] }}</dt>
-                        <dd id="coord_lon" class="text-lg font-semibold text-slate-300">--</dd>
-                    </dl>
-                    <dl class="rounded-2xl border border-white/5 bg-slate-900/70 p-4">
-                        <dt class="text-xs uppercase tracking-wide text-slate-400">{{ ui['coord_region_label'] }}</dt>
-                        <dd id="coord_region" class="text-lg font-semibold text-slate-300">{{ ui['coord_region_placeholder'] }}</dd>
-                    </dl>
+                <div class="grid gap-4 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]">
+                    <div class="rounded-2xl border border-white/5 bg-slate-900/70 p-4">
+                        <p class="text-xs uppercase tracking-wide text-slate-400">{{ ui['coord_coordinates_label'] }}</p>
+                        <div class="mt-3 space-y-3 text-sm text-slate-300">
+                            <div>
+                                <p class="text-xs uppercase tracking-wide text-slate-500">{{ ui['coord_lat_label'] }}</p>
+                                <p id="coord_lat" class="mt-1 text-base font-semibold text-slate-100">--</p>
+                            </div>
+                            <div>
+                                <p class="text-xs uppercase tracking-wide text-slate-500">{{ ui['coord_lon_label'] }}</p>
+                                <p id="coord_lon" class="mt-1 text-base font-semibold text-slate-100">--</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="rounded-2xl border border-white/5 bg-slate-900/70 p-4">
+                        <p class="text-xs uppercase tracking-wide text-slate-400">{{ ui['coord_region_label'] }}</p>
+                        <div id="coord_region" class="mt-3 space-y-4">
+                            <div>
+                                <p id="coord_region_title" data-default="{{ ui['coord_region_placeholder'] }}" class="text-lg font-semibold text-slate-100">{{ ui['coord_region_placeholder'] }}</p>
+                                <p id="coord_region_meta" data-default="{{ ui['coord_region_meta_default'] }}" class="text-sm text-slate-400">{{ ui['coord_region_meta_default'] }}</p>
+                            </div>
+                            <div class="space-y-1">
+                                <p class="text-xs uppercase tracking-wide text-slate-500">{{ ui['region_station_heading'] }}</p>
+                                <p id="coord_region_station" data-default="{{ ui['region_station_unknown'] }}" class="text-sm font-medium text-slate-200">{{ ui['region_station_unknown'] }}</p>
+                                <p id="coord_region_distance" class="text-xs text-slate-500 hidden"></p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="coord_error" class="hidden rounded-2xl border border-red-500/50 bg-red-500/10 p-4 text-sm text-red-200">

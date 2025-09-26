@@ -14,6 +14,10 @@
     "coord_lon_label": "Longitude",
     "coord_region_label": "Region",
     "coord_region_placeholder": "No selection yet",
+    "coord_region_meta_default": "Germany",
+    "coord_coordinates_label": "Coordinates",
+    "region_station_heading": "Nearest weather station",
+    "region_station_unknown": "No station data available",
     "coord_error": "Please place the pin within Germany.",
     "radius_label": "Radius",
     "radius_min": "1 km",
@@ -61,7 +65,9 @@
     "syncListingEmpty": "Data source unavailable.",
     "syncError": "Update failed",
     "syncErrorDetails": "Failed to refresh station data",
-    "toastCloseAria": "Dismiss notification"
+    "toastCloseAria": "Dismiss notification",
+    "regionStationUnknown": "No station data available",
+    "regionStationDistance": "Distance to station: {distance} km"
   },
   "messages": {
     "analysis_summary": "Analysis for coordinates ({lat}, {lon}) in DE from {start} to {end}."

@@ -14,6 +14,10 @@
     "coord_lon_label": "Länge",
     "coord_region_label": "Region",
     "coord_region_placeholder": "Noch keine Auswahl",
+    "coord_region_meta_default": "Deutschland",
+    "coord_coordinates_label": "Koordinaten",
+    "region_station_heading": "Nächste Wetterstation",
+    "region_station_unknown": "Keine Stationsdaten verfügbar",
     "coord_error": "Bitte platziere den Pin innerhalb Deutschlands.",
     "radius_label": "Radius",
     "radius_min": "1 km",
@@ -61,7 +65,9 @@
     "syncListingEmpty": "Datenquelle derzeit nicht erreichbar.",
     "syncError": "Aktualisierung fehlgeschlagen",
     "syncErrorDetails": "Stationsdaten konnten nicht aktualisiert werden",
-    "toastCloseAria": "Hinweis schließen"
+    "toastCloseAria": "Hinweis schließen",
+    "regionStationUnknown": "Keine Stationsdaten verfügbar",
+    "regionStationDistance": "Entfernung zur Station: {distance} km"
   },
   "messages": {
     "analysis_summary": "Auswertung für Koordinaten ({lat}, {lon}) in DE von {start} bis {end}."

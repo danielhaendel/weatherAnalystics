@@ -30,6 +30,9 @@ const DEFAULT_JS_TEXT = {
   syncListingEmpty: 'Data source unavailable.',
   syncError: 'Update failed',
   syncErrorDetails: 'Failed to refresh station data',
+  toastCloseAria: 'Dismiss notification',
+  regionStationUnknown: 'No station data available',
+  regionStationDistance: 'Distance: {distance} km',
 };
 
 const APP_I18N = window.APP_I18N || {};
@@ -73,6 +76,10 @@ const countryField = document.getElementById('address_country');
 const latLabel = document.getElementById('coord_lat');
 const lonLabel = document.getElementById('coord_lon');
 const regionLabel = document.getElementById('coord_region');
+const regionTitleEl = document.getElementById('coord_region_title');
+const regionMetaEl = document.getElementById('coord_region_meta');
+const regionStationNameEl = document.getElementById('coord_region_station');
+const regionStationDistanceEl = document.getElementById('coord_region_distance');
 const coordError = document.getElementById('coord_error');
 const resultBody = document.querySelector('#result .result-body');
 const toastContainer = document.getElementById('toast_container');
@@ -86,6 +93,10 @@ const REGION_LOADING_TEXT = TEXT.regionLoading;
 const REGION_DEFAULT_TEXT = TEXT.regionDefault;
 const REGION_EMPTY_TEXT = TEXT.regionEmpty;
 const THEME_STORAGE_KEY = "weather_theme_preference";
+const REGION_STATION_UNKNOWN = TEXT.regionStationUnknown || '--';
+const REGION_TITLE_DEFAULT = regionTitleEl?.dataset?.default || REGION_EMPTY_TEXT;
+const REGION_META_DEFAULT = regionMetaEl?.dataset?.default || REGION_DEFAULT_TEXT;
+const REGION_STATION_DEFAULT = regionStationNameEl?.dataset?.default || REGION_STATION_UNKNOWN;
 
 let regionLookupSeq = 0;
 
@@ -132,34 +143,135 @@ function formatCoordinate(value, axis) {
 }
 
 
-function setRegionLabel(text) {
-    if (!regionLabel) return;
-    regionLabel.textContent = text;
+function setRegionLabel(title, { meta, stationName, stationDistance } = {}) {
+  const resolvedTitle = title || REGION_TITLE_DEFAULT;
+  const resolvedMeta = meta || REGION_META_DEFAULT;
+  const resolvedStation = stationName || REGION_STATION_DEFAULT;
+
+  if (regionTitleEl) regionTitleEl.textContent = resolvedTitle;
+  if (regionMetaEl) regionMetaEl.textContent = resolvedMeta;
+  if (regionStationNameEl) regionStationNameEl.textContent = resolvedStation;
+
+  if (regionStationDistanceEl) {
+    if (stationDistance) {
+      regionStationDistanceEl.textContent = stationDistance;
+      regionStationDistanceEl.classList.remove('hidden');
+    } else {
+      regionStationDistanceEl.textContent = '';
+      regionStationDistanceEl.classList.add('hidden');
+    }
+  }
 }
 
 async function resolveRegionName(lat, lon) {
-    if (!regionLabel) return;
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
 
-    regionLookupSeq += 1;
-    const lookupId = regionLookupSeq;
-    setRegionLabel(REGION_LOADING_TEXT);
+  regionLookupSeq += 1;
+  const lookupId = regionLookupSeq;
+  setRegionLabel(REGION_LOADING_TEXT, {
+    meta: REGION_META_DEFAULT,
+    stationName: REGION_STATION_DEFAULT,
+  });
 
-    try {
-        const resp = await fetch(`/api/reverse_geocode?lat=${lat}&lon=${lon}&lang=${encodeURIComponent(CURRENT_LANG)}`);
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const data = await resp.json();
-        if (lookupId !== regionLookupSeq) return;
+  try {
+    const resp = await fetch(`/api/reverse_geocode?lat=${lat}&lon=${lon}&lang=${encodeURIComponent(CURRENT_LANG)}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    if (lookupId !== regionLookupSeq) return;
 
-        const city = data.city || data.town || data.village || data.municipality || data.county || data.state;
-        const label = city ? `${city}, ${REGION_DEFAULT_TEXT}` : REGION_DEFAULT_TEXT;
-        setRegionLabel(label);
-    } catch (err) {
-        if (lookupId === regionLookupSeq) {
-            setRegionLabel(REGION_DEFAULT_TEXT);
-        }
-        console.error('Failed to resolve region name', err);
+    const city = data.city || data.town || data.village || data.municipality
+      || data.locality || data.city_district || data.place || data.name;
+    const stateName = data.state || data.region || data.county;
+    const stationInfo = await fetchNearestStationInfo(lat, lon, lookupId);
+
+    const displayTitle = city || stationInfo?.title || REGION_DEFAULT_TEXT;
+    const metaParts = new Set();
+    if (stateName) metaParts.add(stateName);
+    if (!stateName && stationInfo?.state) metaParts.add(stationInfo.state);
+    metaParts.add(REGION_DEFAULT_TEXT);
+    const meta = Array.from(metaParts).filter(Boolean).join(', ');
+
+    setRegionLabel(displayTitle, {
+      meta,
+      stationName: stationInfo?.stationDisplay || REGION_STATION_DEFAULT,
+      stationDistance: stationInfo?.distanceText || '',
+    });
+  } catch (err) {
+    if (lookupId === regionLookupSeq) {
+      fetchNearestStationInfo(lat, lon, lookupId)
+        .then((info) => {
+          if (lookupId !== regionLookupSeq) return;
+          if (info) {
+            const metaParts = new Set();
+            if (info.state) metaParts.add(info.state);
+            metaParts.add(REGION_DEFAULT_TEXT);
+            setRegionLabel(info.title || REGION_DEFAULT_TEXT, {
+              meta: Array.from(metaParts).filter(Boolean).join(', '),
+              stationName: info.stationDisplay || REGION_STATION_DEFAULT,
+              stationDistance: info.distanceText || '',
+            });
+          } else {
+            setRegionLabel(REGION_DEFAULT_TEXT, {
+              meta: REGION_META_DEFAULT,
+              stationName: REGION_STATION_DEFAULT,
+              stationDistance: '',
+            });
+          }
+        })
+        .catch(() => {
+          if (lookupId !== regionLookupSeq) return;
+          setRegionLabel(REGION_DEFAULT_TEXT, {
+            meta: REGION_META_DEFAULT,
+            stationName: REGION_STATION_DEFAULT,
+            stationDistance: '',
+          });
+        });
     }
+    console.error('Failed to resolve region name', err);
+  }
+}
+
+async function fetchNearestStationInfo(lat, lon, lookupId) {
+  try {
+    const resp = await fetch(`/api/stations/nearest?lat=${lat}&lon=${lon}`);
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    if (lookupId && lookupId !== regionLookupSeq) return null;
+    if (data?.station) {
+      const station = data.station;
+      const distanceValue = station.distance_km != null ? parseFloat(station.distance_km) : null;
+      return {
+        title: [station.name, station.state].filter(Boolean).join(', ') || station.name || station.station_id,
+        state: station.state || null,
+        stationDisplay: station.name
+          ? (station.state ? `${station.name} · ${station.state}` : station.name)
+          : REGION_STATION_DEFAULT,
+        distance: Number.isFinite(distanceValue) ? distanceValue : null,
+        distanceText: Number.isFinite(distanceValue) ? formatStationDistance(distanceValue) : '',
+      };
+    }
+  } catch (err) {
+    console.warn('Fallback station lookup failed', err);
+  }
+  return null;
+}
+
+function formatStationDistance(distance) {
+  if (!Number.isFinite(distance)) return '';
+  const template = TEXT.regionStationDistance || '{distance} km';
+  const formatted = distance.toFixed(2);
+  return template.replace('{distance}', formatted);
+}
+
+function getRegionDisplayText() {
+  const titleRaw = regionTitleEl?.textContent?.trim();
+  const metaRaw = regionMetaEl?.textContent?.trim();
+  const title = titleRaw && titleRaw !== REGION_TITLE_DEFAULT ? titleRaw : '';
+  const meta = metaRaw && metaRaw !== REGION_META_DEFAULT ? metaRaw : REGION_META_DEFAULT;
+  if (title) {
+    return meta ? `${title}, ${meta}` : title;
+  }
+  return meta || REGION_DEFAULT_TEXT;
 }
 
 function updateCoordinateSummary(lat, lon) {
@@ -180,7 +292,11 @@ function resetCoordinateSummary() {
     countryField.value = '';
     if (latLabel) latLabel.textContent = '--';
     if (lonLabel) lonLabel.textContent = '--';
-    setRegionLabel(REGION_EMPTY_TEXT);
+    setRegionLabel(REGION_EMPTY_TEXT, {
+      meta: REGION_META_DEFAULT,
+      stationName: REGION_STATION_DEFAULT,
+      stationDistance: '',
+    });
 }
 
 function showCoordinateError(message) {
@@ -520,10 +636,11 @@ function initSyncButton() {
     if (button.disabled) return;
     button.disabled = true;
     button.textContent = TEXT.syncStarted;
-    showToast({
+    let dismissToast = showToast({
       kind: 'info',
       title: TEXT.syncStarted,
       message: TEXT.syncStarted,
+      autoDismiss: false,
     });
     try {
       const data = await postJSON('/api/sync_stations', {});
@@ -538,7 +655,8 @@ function initSyncButton() {
       const variant = downloaded
         ? 'success'
         : (messageKey === 'up_to_date' ? 'info' : (messageKey === 'missing' || messageKey === 'listing_empty' ? 'warning' : 'error'));
-      showToast({
+      if (typeof dismissToast === 'function') dismissToast();
+      dismissToast = showToast({
         kind: variant,
         title: formatted,
         message: rows ? `${rows} ${TEXT.syncSuccess}` : formatted,
@@ -548,10 +666,12 @@ function initSyncButton() {
       console.error('Station sync failed', err);
       const errorMessage = `${TEXT.syncError}: ${err.message}`;
       button.textContent = TEXT.syncError;
-      showToast({
+      if (typeof dismissToast === 'function') dismissToast();
+      dismissToast = showToast({
         kind: 'error',
         title: TEXT.syncError,
         message: err?.message || TEXT.syncErrorDetails,
+        autoDismiss: false,
       });
     } finally {
       setTimeout(restoreDefault, 2500);
@@ -651,14 +771,16 @@ function setupAnalyzeButton() {
   const button = document.getElementById('analyze_btn');
   if (!button) return;
   button.addEventListener('click', async () => {
-        if (!resultBody) return;
-        if (!validateForm()) {
-            resultBody.textContent = TEXT.analyzeCheckInputs;
-            return;
-        }
+    if (!resultBody) return;
+    if (!validateForm()) {
+      resultBody.textContent = TEXT.analyzeCheckInputs;
+      return;
+    }
 
-        const regionText = regionLabel?.textContent || TEXT.regionFallbackLabel;
-        const addressLabel = regionText === REGION_LOADING_TEXT ? REGION_DEFAULT_TEXT : regionText;
+    const regionText = getRegionDisplayText();
+    const addressLabel = regionTitleEl?.textContent === REGION_LOADING_TEXT
+      ? REGION_DEFAULT_TEXT
+      : regionText;
 
         const payload = {
             address_1: addressLabel,
@@ -763,7 +885,8 @@ function createToastNode({ kind = 'info', title = '', message = '', autoDismiss 
 }
 
 function showToast(options) {
-  if (!toastContainer) return;
-  const { card } = createToastNode(options);
+  if (!toastContainer) return () => {};
+  const { card, removeToast } = createToastNode(options);
   toastContainer.appendChild(card);
+  return removeToast;
 }

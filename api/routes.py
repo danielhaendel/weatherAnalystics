@@ -2,11 +2,13 @@
 import os
 import time
 from datetime import date
+from math import radians, sin, cos, sqrt, atan2
 
 import requests
 from flask import Blueprint, request, jsonify, abort, current_app
 
 from dwd_sync import sync_dwd_data
+from db import get_db
 
 api_bp = Blueprint('api', __name__)
 
@@ -223,3 +225,71 @@ def sync_stations():
         },
     }
     return jsonify(payload), 200
+
+
+def haversine_km(lat1, lon1, lat2, lon2):
+    r = 6371.0
+    phi1, phi2 = radians(lat1), radians(lat2)
+    d_phi = radians(lat2 - lat1)
+    d_lambda = radians(lon2 - lon1)
+    a = sin(d_phi / 2) ** 2 + cos(phi1) * cos(phi2) * sin(d_lambda / 2) ** 2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    return r * c
+
+
+@api_bp.get('/stations/nearest')
+def stations_nearest():
+    try:
+        lat = float(request.args.get('lat'))
+        lon = float(request.args.get('lon'))
+    except (TypeError, ValueError):
+        return jsonify({'ok': False, 'error': 'invalid_coordinates'}), 400
+
+    conn = get_db()
+    rows = conn.execute(
+        '''
+        SELECT station_id, station_name, state, latitude, longitude, from_date, to_date
+        FROM stations
+        WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+        ORDER BY ((latitude - ?)*(latitude - ?) + (longitude - ?)*(longitude - ?))
+        LIMIT 8
+        '''
+        , (lat, lat, lon, lon)
+    ).fetchall()
+
+    if not rows:
+        return jsonify({'ok': False, 'error': 'no_station_data'}), 404
+
+    best_row = None
+    best_distance = None
+    for row in rows:
+        row_lat = row['latitude']
+        row_lon = row['longitude']
+        if row_lat is None or row_lon is None:
+            continue
+        distance = haversine_km(lat, lon, row_lat, row_lon)
+        if best_distance is None or distance < best_distance:
+            best_distance = distance
+            best_row = row
+
+    if best_row is None:
+        return jsonify({'ok': False, 'error': 'no_station_data'}), 404
+
+    payload = {
+        'ok': True,
+        'station': {
+            'station_id': best_row['station_id'],
+            'name': best_row['station_name'],
+            'state': best_row['state'],
+            'latitude': best_row['latitude'],
+            'longitude': best_row['longitude'],
+            'from_date': best_row['from_date'],
+            'to_date': best_row['to_date'],
+            'distance_km': round(best_distance, 2) if best_distance is not None else None,
+        }
+    }
+    current_app.logger.info(
+        'Nearest station lookup: lat=%s lon=%s -> %s (distance=%.2f km)',
+        lat, lon, best_row['station_id'], best_distance or -1.0
+    )
+    return jsonify(payload)

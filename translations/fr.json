@@ -14,6 +14,10 @@
     "coord_lon_label": "Longitude",
     "coord_region_label": "Région",
     "coord_region_placeholder": "Pas encore de sélection",
+    "coord_region_meta_default": "Allemagne",
+    "coord_coordinates_label": "Coordonnées",
+    "region_station_heading": "Station météo la plus proche",
+    "region_station_unknown": "Aucune station disponible",
     "coord_error": "Merci de placer le repère en Allemagne.",
     "radius_label": "Rayon",
     "radius_min": "1 km",
@@ -61,7 +65,9 @@
     "syncListingEmpty": "Source de données indisponible pour l'instant.",
     "syncError": "Échec de la mise à jour",
     "syncErrorDetails": "Impossible de mettre à jour les stations",
-    "toastCloseAria": "Fermer la notification"
+    "toastCloseAria": "Fermer la notification",
+    "regionStationUnknown": "Aucune station disponible",
+    "regionStationDistance": "Distance jusqu'à la station : {distance} km"
   },
   "messages": {
     "analysis_summary": "Analyse pour les coordonnées ({lat}, {lon}) en DE du {start} au {end}."

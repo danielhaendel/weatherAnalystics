@@ -14,6 +14,10 @@
     "coord_lon_label": "Longitud",
     "coord_region_label": "Región",
     "coord_region_placeholder": "Sin selección aún",
+    "coord_region_meta_default": "Alemania",
+    "coord_coordinates_label": "Coordenadas",
+    "region_station_heading": "Estación meteorológica más cercana",
+    "region_station_unknown": "Sin datos de estaciones disponibles",
     "coord_error": "Coloca el pin dentro de Alemania.",
     "radius_label": "Radio",
     "radius_min": "1 km",
@@ -61,7 +65,9 @@
     "syncListingEmpty": "Fuente de datos temporalmente no disponible.",
     "syncError": "La actualización falló",
     "syncErrorDetails": "No se pudieron actualizar las estaciones",
-    "toastCloseAria": "Cerrar notificación"
+    "toastCloseAria": "Cerrar notificación",
+    "regionStationUnknown": "Sin datos de estaciones disponibles",
+    "regionStationDistance": "Distancia a la estación: {distance} km"
   },
   "messages": {
     "analysis_summary": "Análisis para las coordenadas ({lat}, {lon}) en DE del {start} al {end}."
