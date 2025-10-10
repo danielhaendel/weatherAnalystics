@@ -25,8 +25,8 @@ from flask_login import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from db import execute_script, get_db
-from dwd_sync import sync_dwd_data
+from .db import execute_script, get_db
+from .dwd_sync import sync_dwd_data
 
 
 auth_bp = Blueprint('auth', __name__)

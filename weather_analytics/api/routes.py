@@ -7,8 +7,8 @@ from math import radians, sin, cos, sqrt, atan2
 import requests
 from flask import Blueprint, request, jsonify, abort, current_app
 
-from dwd_sync import sync_dwd_data
-from db import get_db
+from ..dwd_sync import sync_dwd_data
+from ..db import get_db
 
 api_bp = Blueprint('api', __name__)
 

@@ -14,7 +14,7 @@ from urllib.parse import urljoin
 import requests
 import csv
 
-from db import execute_script, get_db
+from .db import execute_script, get_db
 
 BASE_URL = 'https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/daily/kl/historical/'
 STATIONS_FILENAME = 'KL_Tageswerte_Beschreibung_Stationen.txt'

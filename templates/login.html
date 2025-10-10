@@ -7,10 +7,13 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+          rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <style>
-        body { font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont; }
+        body {
+            font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
@@ -21,22 +24,22 @@
     </div>
 
     {% with messages = get_flashed_messages(with_categories=True) %}
-    {% if messages %}
-        <div class="space-y-2">
-        {% for category, message in messages %}
-            <div class="rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-sm">
-                <strong class="block capitalize">{{ category }}</strong>
-                <span>{{ message }}</span>
+        {% if messages %}
+            <div class="space-y-2">
+                {% for category, message in messages %}
+                    <div class="rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-sm">
+                        <strong class="block capitalize">{{ category }}</strong>
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
             </div>
-        {% endfor %}
-        </div>
-    {% endif %}
+        {% endif %}
     {% endwith %}
 
     {% if error %}
-    <div class="rounded-lg border border-red-500/60 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-        {{ error }}
-    </div>
+        <div class="rounded-lg border border-red-500/60 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            {{ error }}
+        </div>
     {% endif %}
 
     <form method="post" class="space-y-4">
@@ -55,11 +58,6 @@
             Anmelden
         </button>
     </form>
-
-    <p class="text-center text-xs text-slate-500">
-        Standardkonto: <code>admin / admin</code>
-    </p>
-
     <div class="text-center">
         <a href="{{ url_for('index') }}" class="text-sm text-lime-300 hover:text-lime-200">Zurück zur Startseite</a>
     </div>
