@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <title>Login | Weather Analytics</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont; }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
+<div class="w-full max-w-md space-y-6">
+    <div class="text-center space-y-2">
+        <h1 class="text-2xl font-semibold">Administrator-Login</h1>
+        <p class="text-sm text-slate-400">Bitte melden Sie sich mit Ihren Zugangsdaten an.</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=True) %}
+    {% if messages %}
+        <div class="space-y-2">
+        {% for category, message in messages %}
+            <div class="rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-sm">
+                <strong class="block capitalize">{{ category }}</strong>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
+
+    {% if error %}
+    <div class="rounded-lg border border-red-500/60 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="post" class="space-y-4">
+        <div>
+            <label for="username" class="block text-sm font-medium text-slate-300">Benutzername</label>
+            <input id="username" name="username" type="text" required autocomplete="username"
+                   class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40">
+        </div>
+        <div>
+            <label for="password" class="block text-sm font-medium text-slate-300">Passwort</label>
+            <input id="password" name="password" type="password" required autocomplete="current-password"
+                   class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-slate-100 focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40">
+        </div>
+        <button type="submit"
+                class="w-full rounded-xl bg-gradient-to-r from-lime-400 via-emerald-400 to-sky-400 px-4 py-2 text-slate-950 font-semibold transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-lime-300/50">
+            Anmelden
+        </button>
+    </form>
+
+    <p class="text-center text-xs text-slate-500">
+        Standardkonto: <code>admin / admin</code>
+    </p>
+
+    <div class="text-center">
+        <a href="{{ url_for('index') }}" class="text-sm text-lime-300 hover:text-lime-200">Zurück zur Startseite</a>
+    </div>
+</div>
+</body>
+</html>

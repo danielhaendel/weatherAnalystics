@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <title>Adminbereich | Weather Analytics</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
+          rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100">
+<header class="border-b border-slate-800 bg-slate-900/80">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <div>
+            <p class="text-xs uppercase tracking-[0.35em] text-lime-300/80">Adminbereich</p>
+            <h1 class="text-2xl font-semibold">Hallo, {{ current_user.username }}</h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{{ url_for('index') }}" class="text-sm text-lime-300 hover:text-lime-100">Zur Startseite</a>
+            <form method="post" action="{{ url_for('auth.logout') }}" data-show-loader="true">
+                <button type="submit" class="text-sm text-slate-400 transition hover:text-red-300">Abmelden</button>
+            </form>
+        </div>
+    </div>
+</header>
+
+{% set flashes = get_flashed_messages(with_categories=True) %}
+
+<main class="mx-auto flex w-full max-w-6xl flex-1 gap-8 px-6 py-10 pb-16 min-h-[calc(100vh-160px)]">
+    <aside class="w-full max-w-xs rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+        <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Navigation</p>
+        <nav class="mt-4 flex flex-col gap-1 text-sm">
+            <a href="{{ url_for('auth.admin', section='data') }}"
+               class="flex items-center justify-between rounded-xl px-4 py-3 transition {{ 'bg-slate-800/80 text-white' if active_section == 'data' else 'text-slate-400 hover:bg-slate-800/40 hover:text-white' }}">
+                <span>Daten aktualisieren</span>
+            </a>
+            <a href="{{ url_for('auth.admin', section='password') }}"
+               class="flex items-center justify-between rounded-xl px-4 py-3 transition {{ 'bg-slate-800/80 text-white' if active_section == 'password' else 'text-slate-400 hover:bg-slate-800/40 hover:text-white' }}">
+                <span>Passwort ändern</span>
+            </a>
+        </nav>
+    </aside>
+
+    <section class="flex-1 space-y-6">
+        {% if active_section == 'password' %}
+            <div class="flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900/70 p-6 min-h-[calc(100vh-220px)] pb-10">
+                <h2 class="text-xl font-semibold text-white">Passwort ändern</h2>
+                <p class="mt-1 text-sm text-slate-400">Vergeben Sie ein neues Passwort für das aktuelle Konto.</p>
+                <form method="post" action="{{ url_for('auth.change_password') }}" class="mt-6 space-y-4"
+                      data-show-loader="true">
+                    <div>
+                        <label for="current_password" class="block text-sm font-medium text-slate-300">Aktuelles
+                            Passwort</label>
+                        <input id="current_password" name="current_password" type="password" required
+                               autocomplete="current-password"
+                               class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40">
+                    </div>
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div>
+                            <label for="new_password" class="block text-sm font-medium text-slate-300">Neues
+                                Passwort</label>
+                            <input id="new_password" name="new_password" type="password" required
+                                   autocomplete="new-password"
+                                   class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40">
+                        </div>
+                        <div>
+                            <label for="confirm_password"
+                                   class="block text-sm font-medium text-slate-300">Bestätigung</label>
+                            <input id="confirm_password" name="confirm_password" type="password" required
+                                   autocomplete="new-password"
+                                   class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40">
+                        </div>
+                    </div>
+                    <button type="submit"
+                            class="w-full rounded-xl bg-gradient-to-r from-lime-400 via-emerald-400 to-sky-400 px-4 py-2 text-slate-950 font-semibold transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-lime-300/50">
+                        Passwort speichern
+                    </button>
+                </form>
+            </div>
+        {% else %}
+            <div class="flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900/70 p-6 min-h-[calc(100vh-220px)] pb-10">
+                <h2 class="text-xl font-semibold text-white">Daten aktualisieren</h2>
+                <p class="mt-1 text-sm text-slate-400">Führen Sie manuelle Aktualisierungen der importierten DWD-Daten
+                    durch.</p>
+                <div class="mt-6 space-y-4">
+                    <form method="post" action="{{ url_for('auth.sync_stations_admin') }}" class="space-y-2"
+                          data-show-loader="true">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-white">Stationsdaten aktualisieren</p>
+                                <p class="text-xs text-slate-400">Lädt die Stations-Metadaten neu vom DWD.</p>
+                            </div>
+                            <button type="submit"
+                                    class="rounded-lg border border-lime-500/40 bg-lime-500/10 px-4 py-2 text-sm font-semibold text-lime-200 transition hover:border-lime-400 hover:bg-lime-400/20">
+                                Starten
+                            </button>
+                        </div>
+                    </form>
+                    <form method="post" action="{{ url_for('auth.sync_weather_admin') }}" class="space-y-2"
+                          data-show-loader="true">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-white">Wetterdaten vollständig aktualisieren</p>
+                                <p class="text-xs text-slate-400">Lädt alle verfügbaren täglichen Wetterdaten
+                                    herunter.</p>
+                            </div>
+                            <button type="submit"
+                                    class="rounded-lg border border-sky-500/40 bg-sky-500/10 px-4 py-2 text-sm font-semibold text-sky-200 transition hover:border-sky-400 hover:bg-sky-400/20">
+                                Starten
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+    </section>
+</main>
+
+<div id="toast_container" class="fixed right-6 top-6 z-50 flex w-full max-w-sm flex-col items-end" aria-live="polite"
+     aria-atomic="true"></div>
+<script type="application/json" id="flash-data">{{ flashes|tojson }}</script>
+<script>
+    (function () {
+        const container = document.getElementById('toast_container');
+        const dataEl = document.getElementById('flash-data');
+        if (!container || !dataEl) return;
+
+        const VARIANTS = {
+            success: {
+                border: 'border-emerald-500/40',
+                iconBg: 'bg-emerald-500/10 text-emerald-300',
+                icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>'
+            },
+            info: {
+                border: 'border-sky-500/40',
+                iconBg: 'bg-sky-500/10 text-sky-300',
+                icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+            },
+            warning: {
+                border: 'border-amber-400/40',
+                iconBg: 'bg-amber-400/10 text-amber-200',
+                icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86l-8.59 14.8A1 1 0 002.58 20h18.84a1 1 0 00.87-1.52L13.71 3.86a1 1 0 00-1.74 0z"/></svg>'
+            },
+            error: {
+                border: 'border-rose-500/40',
+                iconBg: 'bg-rose-500/10 text-rose-300',
+                icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>'
+            }
+        };
+
+        function showToast({kind = 'info', message = '', autoDismiss = true, duration = 6000}) {
+            if (!message) return;
+            const variant = VARIANTS[kind] || VARIANTS.info;
+            const toast = document.createElement('div');
+            toast.className = `relative flex items-center w-full max-w-sm gap-3 p-4 pb-6 mb-4 rounded-2xl border shadow-lg backdrop-blur-xl bg-slate-950/90 text-slate-100 transform transition-all duration-300 ease-out translate-x-6 opacity-0 ${variant.border}`;
+            toast.setAttribute('role', 'alert');
+
+            const iconWrapper = document.createElement('div');
+            iconWrapper.className = `inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${variant.iconBg}`;
+            iconWrapper.innerHTML = variant.icon;
+
+            const textWrapper = document.createElement('div');
+            textWrapper.className = 'text-sm font-medium text-slate-100';
+            textWrapper.textContent = message;
+
+            const closeButton = document.createElement('button');
+            closeButton.type = 'button';
+            closeButton.className = 'ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-slate-500/60';
+            closeButton.innerHTML = '<span class="sr-only">Schließen</span><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>';
+
+            let timer = null;
+            let startTime = Date.now();
+            let remaining = duration;
+
+            const progressWrapper = document.createElement('div');
+            progressWrapper.className = 'pointer-events-none absolute inset-x-4 bottom-3 h-1 rounded-full bg-slate-800/70';
+            const progressBar = document.createElement('span');
+            progressBar.className = 'block h-full w-full rounded-full bg-gradient-to-r from-lime-400 via-emerald-400 to-sky-400';
+            progressWrapper.appendChild(progressBar);
+
+            const removeToast = () => {
+                if (timer) {
+                    clearTimeout(timer);
+                    timer = null;
+                }
+                toast.classList.remove('translate-x-0', 'opacity-100');
+                toast.classList.add('translate-x-6', 'opacity-0');
+                setTimeout(() => toast.remove(), 260);
+            };
+
+            closeButton.addEventListener('click', removeToast);
+
+            if (autoDismiss) {
+                progressBar.style.width = '100%';
+                requestAnimationFrame(() => {
+                    progressBar.style.transition = `width linear ${duration}ms`;
+                    progressBar.style.width = '0%';
+                });
+                startTime = Date.now();
+                timer = setTimeout(removeToast, duration);
+            } else {
+                progressWrapper.classList.add('hidden');
+            }
+
+            toast.addEventListener('mouseenter', () => {
+                if (!autoDismiss || !timer) return;
+                const elapsed = Date.now() - startTime;
+                remaining = Math.max(0, duration - elapsed);
+                clearTimeout(timer);
+                timer = null;
+                const percent = (remaining / duration) * 100;
+                progressBar.style.transition = 'none';
+                progressBar.style.width = `${percent}%`;
+                progressBar.getBoundingClientRect();
+            });
+
+            toast.addEventListener('mouseleave', () => {
+                if (!autoDismiss || timer || remaining <= 0) return;
+                startTime = Date.now();
+                requestAnimationFrame(() => {
+                    progressBar.style.transition = `width linear ${remaining}ms`;
+                    progressBar.style.width = '0%';
+                });
+                timer = setTimeout(removeToast, remaining);
+            });
+
+            toast.appendChild(iconWrapper);
+            toast.appendChild(textWrapper);
+            toast.appendChild(closeButton);
+            toast.appendChild(progressWrapper);
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-x-6', 'opacity-0');
+                toast.classList.add('translate-x-0', 'opacity-100');
+            });
+        }
+
+        let messages = [];
+        try {
+            messages = JSON.parse(dataEl.textContent || '[]');
+        } catch (err) {
+            console.warn('Konnte Flash-Meldungen nicht lesen:', err);
+        }
+
+        messages.forEach(([category, message]) => {
+            showToast({kind: String(category || 'info').toLowerCase(), message, autoDismiss: true, duration: 6000});
+        });
+    })();
+
+    (function () {
+        const overlay = document.getElementById('loading_overlay');
+        if (!overlay) return;
+        overlay.classList.remove('is-visible');
+        window.addEventListener('pageshow', () => overlay.classList.remove('is-visible'));
+        const showOverlay = () => overlay.classList.add('is-visible');
+        document.querySelectorAll('form[data-show-loader="true"]').forEach((form) => {
+            form.addEventListener('submit', () => {
+                showOverlay();
+            });
+        });
+    })();
+</script>
+</body>
+</html>

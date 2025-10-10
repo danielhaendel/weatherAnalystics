@@ -11,6 +11,7 @@ from flask import Flask, render_template, request, make_response
 from api.routes import api_bp
 from db import init_app as init_db_app, ensure_database
 from dwd_sync import sync_dwd_data
+from auth import auth_bp, init_auth
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -67,10 +68,13 @@ def create_app() -> Flask:
     app.config['APP_DEFAULT_LANGUAGE'] = DEFAULT_LANGUAGE
     app.config.setdefault('DATABASE', str((BASE_DIR / 'instance' / 'weather.db')))
     app.config.setdefault('LOG_LEVEL', 'INFO')
+    app.config['SECRET_KEY'] = app.config.get('SECRET_KEY') or 'change-me'
     configure_logging(app)
-    app.register_blueprint(api_bp, url_prefix='/api')
     init_db_app(app)
     ensure_database(app)
+    init_auth(app)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(api_bp, url_prefix='/api')
     sync_result = sync_dwd_data(app)
     app.logger.info('Initial station sync result: %s', sync_result)
 

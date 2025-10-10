@@ -176,31 +176,129 @@ body.theme-light .border-red-500\/50 {
 }
 
 .loading-overlay__box {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
-    width: min(320px, 90vw);
+    gap: 1.25rem;
+    width: min(320px, 92vw);
     border-radius: 1.8rem;
     border: 1px solid rgba(255, 255, 255, 0.14);
-    background: rgba(15, 23, 42, 0.75);
-    padding: 1.65rem;
-    box-shadow: 0 25px 70px -30px rgba(15, 23, 42, 0.75);
+    background: rgba(15, 23, 42, 0.82);
+    padding: 2rem 2.2rem 2.1rem;
+    box-shadow: 0 26px 72px -28px rgba(15, 23, 42, 0.82);
 }
 
-.loading-overlay__spinner {
-    width: 3rem;
-    height: 3rem;
-    border-radius: 9999px;
-    border: 4px solid rgba(255, 255, 255, 0.18);
-    border-top-color: #bef264;
-    animation: loading-overlay-spin 0.9s linear infinite;
+.preloader {
+    position: relative;
+    width: 120px;
+    height: 120px;
+}
+
+.preloader svg {
+    width: 120px;
+    height: 120px;
+}
+
+.preloader path {
+    stroke: #9ea1a4;
+    stroke-width: 0.25;
+    fill: #241e20;
+}
+
+.preloader #cloud {
+    position: relative;
+    z-index: 2;
+}
+
+.preloader #cloud path {
+    fill: #e2e8f0;
+    stroke: rgba(148, 163, 184, 0.45);
+}
+
+.preloader #sun {
+    margin-left: -10px;
+    margin-top: 6px;
+    opacity: 0.9;
+    width: 60px;
+    height: 60px;
+    position: absolute;
+    left: 54px;
+    top: 8px;
+    z-index: 1;
+    animation: preloader-rotate 16s linear infinite;
+}
+
+.preloader #sun path {
+    stroke-width: 0.18;
+    fill: #facc15;
+}
+
+.preloader .rain {
+    position: absolute;
+    width: 70px;
+    height: 70px;
+    margin-top: -32px;
+    margin-left: 19px;
+}
+
+.preloader .drop {
+    opacity: 1;
+    background: #9ea1a4;
+    display: block;
+    float: left;
+    width: 3px;
+    height: 10px;
+    margin-left: 4px;
+    border-radius: 0 0 6px 6px;
+    animation: preloader-drop 350ms linear infinite;
+}
+
+.preloader .drop:nth-child(1) {
+    animation-delay: -130ms;
+}
+
+.preloader .drop:nth-child(2) {
+    animation-delay: -240ms;
+}
+
+.preloader .drop:nth-child(3) {
+    animation-delay: -390ms;
+}
+
+.preloader .drop:nth-child(4) {
+    animation-delay: -525ms;
+}
+
+.preloader .drop:nth-child(5) {
+    animation-delay: -640ms;
+}
+
+.preloader .drop:nth-child(6) {
+    animation-delay: -790ms;
+}
+
+.preloader .drop:nth-child(7) {
+    animation-delay: -900ms;
+}
+
+.preloader .drop:nth-child(8) {
+    animation-delay: -1050ms;
+}
+
+.preloader .drop:nth-child(9) {
+    animation-delay: -1130ms;
+}
+
+.preloader .drop:nth-child(10) {
+    animation-delay: -1300ms;
 }
 
 .loading-overlay__text {
     font-size: 0.95rem;
     font-weight: 500;
+    letter-spacing: 0.02em;
     color: #d1d5db;
     text-align: center;
 }
@@ -215,18 +313,35 @@ body.theme-light .loading-overlay__box {
     box-shadow: 0 30px 70px -28px rgba(15, 23, 42, 0.25);
 }
 
-body.theme-light .loading-overlay__spinner {
-    border: 4px solid rgba(148, 163, 184, 0.25);
-    border-top-color: #38bdf8;
+body.theme-light .preloader #cloud path {
+    fill: #f8fafc;
+    stroke: rgba(148, 163, 184, 0.35);
 }
 
 body.theme-light .loading-overlay__text {
-    color: #334155;
+    color: #1e293b;
 }
 
-@keyframes loading-overlay-spin {
-    to {
-        transform: rotate(360deg);
+@keyframes preloader-rotate {
+    0% {
+        transform: rotateZ(0deg);
+    }
+    100% {
+        transform: rotateZ(360deg);
+    }
+}
+
+@keyframes preloader-drop {
+    50% {
+        height: 45px;
+        opacity: 0;
+    }
+    51% {
+        opacity: 0;
+    }
+    100% {
+        height: 1px;
+        opacity: 0;
     }
 }
 
@@ -255,6 +370,7 @@ body.theme-light .loading-overlay__text {
     color: #0f172a;
     font-weight: 600;
     font-size: 0.85rem;
+    text-decoration: none;
     box-shadow: 0 16px 30px -22px rgba(163, 230, 53, 0.6);
     transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
