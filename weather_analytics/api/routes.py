@@ -7,7 +7,7 @@ from math import radians, sin, cos, sqrt, atan2
 import requests
 from flask import Blueprint, request, jsonify, abort, current_app
 
-from ..dwd_sync import sync_dwd_data
+from ..dwd_kl_importer import import_station_metadata
 from ..db import get_db
 
 api_bp = Blueprint('api', __name__)
@@ -207,21 +207,28 @@ def sync_stations():
     """Trigger a refresh of station metadata from the DWD feed."""
     current_app.logger.info('API sync_stations called.')
     try:
-        result = sync_dwd_data(current_app, include_weather=False, raise_errors=True)
+        stats = import_station_metadata(current_app)
     except Exception as err:  # pragma: no cover - defensive
         current_app.logger.exception('Station sync failed: %s', err)
         return jsonify({'ok': False, 'error': str(err)}), 500
 
-    stations = result.get('stations', {}) if isinstance(result, dict) else {}
-    message = stations.get('message') or ('downloaded' if stations.get('downloaded') else 'unknown')
-    current_app.logger.info('Station sync result: downloaded=%s rows=%s message=%s',
-                            stations.get('downloaded'), stations.get('rows_processed'), message)
+    inserted = stats.get('inserted', 0)
+    updated = stats.get('updated', 0)
+    rows_processed = inserted + updated
+    current_app.logger.info(
+        'Station sync result: inserted=%s updated=%s rows=%s',
+        inserted,
+        updated,
+        rows_processed,
+    )
     payload = {
         'ok': True,
         'stations': {
-            'downloaded': bool(stations.get('downloaded')),
-            'rows_processed': stations.get('rows_processed', 0),
-            'message': message,
+            'downloaded': True,
+            'rows_processed': rows_processed,
+            'inserted': inserted,
+            'updated': updated,
+            'message': 'downloaded',
         },
     }
     return jsonify(payload), 200

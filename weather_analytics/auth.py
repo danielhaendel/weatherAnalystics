@@ -10,6 +10,7 @@ from flask import (
     Blueprint,
     current_app,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -26,7 +27,8 @@ from flask_login import (
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from .db import execute_script, get_db
-from .dwd_sync import sync_dwd_data
+from .dwd_kl_importer import import_full_history, import_station_metadata
+from .job_manager import get_job, start_job
 
 
 auth_bp = Blueprint('auth', __name__)
@@ -172,6 +174,31 @@ def admin():
     return render_template('admin.html', active_section=section)
 
 
+@auth_bp.post('/admin/import/start')
+@login_required
+def admin_import_start():
+    payload = request.get_json(silent=True) or {}
+    kind = (payload.get('kind') or '').strip().lower()
+    if kind not in {'stations', 'weather'}:
+        return jsonify({'ok': False, 'error': 'invalid_kind'}), 400
+
+    app_obj = current_app._get_current_object()
+    if kind == 'stations':
+        job = start_job('stations', import_station_metadata, args=(app_obj,))
+    else:
+        job = start_job('weather', import_full_history, args=(app_obj,))
+    return jsonify({'ok': True, 'job_id': job.job_id})
+
+
+@auth_bp.get('/admin/import/<job_id>')
+@login_required
+def admin_import_status(job_id: str):
+    job = get_job(job_id)
+    if job is None:
+        return jsonify({'ok': False, 'error': 'job_not_found'}), 404
+    return jsonify({'ok': True, 'job': job.to_dict()})
+
+
 @auth_bp.post('/admin/change-password')
 @login_required
 def change_password():
@@ -199,19 +226,19 @@ def change_password():
 @login_required
 def sync_stations_admin():
     try:
-        result = sync_dwd_data(current_app, include_weather=False, raise_errors=True)
+        stats = import_station_metadata(current_app)
     except Exception as exc:  # pragma: no cover - defensive
         current_app.logger.exception('Station sync failed in admin view: %s', exc)
         flash('Stationsdaten konnten nicht aktualisiert werden.', 'error')
         return redirect(url_for('auth.admin', section='data'))
 
-    stations = (result or {}).get('stations') or {}
-    if stations.get('downloaded'):
-        rows = stations.get('rows_processed', 0)
-        flash(f'Stationsdaten aktualisiert ({rows} Einträge).', 'success')
-    else:
-        message = stations.get('message') or 'keine Aktion ausgeführt'
-        flash(f'Stationsdaten: {message}.', 'info')
+    inserted = stats.get('inserted', 0)
+    updated = stats.get('updated', 0)
+    total = inserted + updated
+    flash(
+        f'Stationsdaten aktualisiert (neu: {inserted}, aktualisiert: {updated}, gesamt: {total}).',
+        'success',
+    )
     return redirect(url_for('auth.admin', section='data'))
 
 
@@ -219,16 +246,34 @@ def sync_stations_admin():
 @login_required
 def sync_weather_admin():
     try:
-        result = sync_dwd_data(current_app, include_weather=True, raise_errors=True)
+        report = import_full_history(current_app)
     except Exception as exc:  # pragma: no cover - defensive
         current_app.logger.exception('Weather sync failed in admin view: %s', exc)
         flash('Wetterdaten konnten nicht aktualisiert werden.', 'error')
         return redirect(url_for('auth.admin', section='data'))
 
-    weather = (result or {}).get('weather') or {}
-    processed = weather.get('processed')
-    if processed:
-        flash(f'Wetterdaten für {processed} Dateien aktualisiert.', 'success')
+    stations = report.get('stations', {}) if isinstance(report, dict) else {}
+    daily = report.get('daily', {}) if isinstance(report, dict) else {}
+
+    inserted_stations = stations.get('inserted', 0)
+    updated_stations = stations.get('updated', 0)
+    inserted_daily = daily.get('inserted', 0)
+    updated_daily = daily.get('updated', 0)
+    archives_failed = daily.get('archives_failed', 0)
+    archives_processed = daily.get('archives_processed', 0)
+
+    summary_message = (
+        'Wetterdaten vollständig aktualisiert. '
+        f'Stationen neu: {inserted_stations}, aktualisiert: {updated_stations}. '
+        f'Tageswerte neu: {inserted_daily}, aktualisiert: {updated_daily}. '
+        f'ZIP-Dateien verarbeitet: {archives_processed}, fehlgeschlagen: {archives_failed}.'
+    )
+
+    if archives_failed:
+        flash(summary_message, 'warning')
+        errors = daily.get('errors') or []
+        for error in errors[:3]:
+            flash(f'Fehler: {error}', 'error')
     else:
-        flash('Es wurden keine neuen Wetterdaten verarbeitet.', 'info')
+        flash(summary_message, 'success')
     return redirect(url_for('auth.admin', section='data'))

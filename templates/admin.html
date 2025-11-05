@@ -17,6 +17,7 @@
     </style>
 </head>
 <body class="min-h-screen bg-slate-950 text-slate-100">
+{% set loader_text = 'Daten werden aktualisiert...' %}{% include '_loader.html' %}
 <header class="border-b border-slate-800 bg-slate-900/80">
     <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <div>
@@ -91,29 +92,27 @@
                 <p class="mt-1 text-sm text-slate-400">Führen Sie manuelle Aktualisierungen der importierten DWD-Daten
                     durch.</p>
                 <div class="mt-6 space-y-4">
-                    <form method="post" action="{{ url_for('auth.sync_stations_admin') }}" class="space-y-2"
-                          data-show-loader="true">
+                    <form class="space-y-2" data-import-kind="stations">
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-medium text-white">Stationsdaten aktualisieren</p>
                                 <p class="text-xs text-slate-400">Lädt die Stations-Metadaten neu vom DWD.</p>
                             </div>
-                            <button type="submit"
-                                    class="rounded-lg border border-lime-500/40 bg-lime-500/10 px-4 py-2 text-sm font-semibold text-lime-200 transition hover:border-lime-400 hover:bg-lime-400/20">
+                            <button type="button" data-import-trigger="stations"
+                                    class="rounded-lg border border-lime-500/40 bg-lime-500/10 px-4 py-2 text-sm font-semibold text-lime-200 transition hover:border-lime-400 hover:bg-lime-400/20 disabled:cursor-not-allowed disabled:opacity-60">
                                 Starten
                             </button>
                         </div>
                     </form>
-                    <form method="post" action="{{ url_for('auth.sync_weather_admin') }}" class="space-y-2"
-                          data-show-loader="true">
+                    <form class="space-y-2" data-import-kind="weather">
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-medium text-white">Wetterdaten vollständig aktualisieren</p>
                                 <p class="text-xs text-slate-400">Lädt alle verfügbaren täglichen Wetterdaten
                                     herunter.</p>
                             </div>
-                            <button type="submit"
-                                    class="rounded-lg border border-sky-500/40 bg-sky-500/10 px-4 py-2 text-sm font-semibold text-sky-200 transition hover:border-sky-400 hover:bg-sky-400/20">
+                            <button type="button" data-import-trigger="weather"
+                                    class="rounded-lg border border-sky-500/40 bg-sky-500/10 px-4 py-2 text-sm font-semibold text-sky-200 transition hover:border-sky-400 hover:bg-sky-400/20 disabled:cursor-not-allowed disabled:opacity-60">
                                 Starten
                             </button>
                         </div>
@@ -131,7 +130,9 @@
     (function () {
         const container = document.getElementById('toast_container');
         const dataEl = document.getElementById('flash-data');
-        if (!container || !dataEl) return;
+        if (!container || !dataEl) {
+            return;
+        }
 
         const VARIANTS = {
             success: {
@@ -157,7 +158,9 @@
         };
 
         function showToast({kind = 'info', message = '', autoDismiss = true, duration = 6000}) {
-            if (!message) return;
+            if (!message) {
+                return;
+            }
             const variant = VARIANTS[kind] || VARIANTS.info;
             const toast = document.createElement('div');
             toast.className = `relative flex items-center w-full max-w-sm gap-3 p-4 pb-6 mb-4 rounded-2xl border shadow-lg backdrop-blur-xl bg-slate-950/90 text-slate-100 transform transition-all duration-300 ease-out translate-x-6 opacity-0 ${variant.border}`;
@@ -211,7 +214,9 @@
             }
 
             toast.addEventListener('mouseenter', () => {
-                if (!autoDismiss || !timer) return;
+                if (!autoDismiss || !timer) {
+                    return;
+                }
                 const elapsed = Date.now() - startTime;
                 remaining = Math.max(0, duration - elapsed);
                 clearTimeout(timer);
@@ -223,7 +228,9 @@
             });
 
             toast.addEventListener('mouseleave', () => {
-                if (!autoDismiss || timer || remaining <= 0) return;
+                if (!autoDismiss || timer || remaining <= 0) {
+                    return;
+                }
                 startTime = Date.now();
                 requestAnimationFrame(() => {
                     progressBar.style.transition = `width linear ${remaining}ms`;
@@ -244,6 +251,8 @@
             });
         }
 
+        window.adminShowToast = showToast;
+
         let messages = [];
         try {
             messages = JSON.parse(dataEl.textContent || '[]');
@@ -258,15 +267,342 @@
 
     (function () {
         const overlay = document.getElementById('loading_overlay');
-        if (!overlay) return;
-        overlay.classList.remove('is-visible');
-        window.addEventListener('pageshow', () => overlay.classList.remove('is-visible'));
-        const showOverlay = () => overlay.classList.add('is-visible');
+        if (!overlay) {
+            return;
+        }
+
+        const loaderTextEl = overlay.querySelector('.loading-overlay__text');
+        const defaultOverlayText = loaderTextEl ? loaderTextEl.getAttribute('data-default-text') || loaderTextEl.textContent : '';
+        const progressContainer = overlay.querySelector('[data-progress-container]');
+        const progressBar = overlay.querySelector('[data-progress-bar]');
+        const progressPercent = overlay.querySelector('[data-progress-percent]');
+        const progressMessage = overlay.querySelector('[data-progress-message]');
+        const progressDetail = overlay.querySelector('[data-progress-detail]');
+        const showToast = window.adminShowToast || function noop() {};
+        const triggerButtons = Array.from(document.querySelectorAll('[data-import-trigger]'));
+        const startUrl = "{{ url_for('auth.admin_import_start') }}";
+        const statusUrlTemplate = "{{ url_for('auth.admin_import_status', job_id='__JOB__') }}";
+        const stageLabels = {
+            prepare: 'Vorbereitung läuft...',
+            stations: 'Stationsdaten werden verarbeitet...',
+            daily: 'Tageswerte werden verarbeitet...',
+            complete: 'Import abgeschlossen'
+        };
+
+        let pollTimer = null;
+        let activeJob = null;
+
+        function clearTimer() {
+            if (pollTimer) {
+                clearTimeout(pollTimer);
+                pollTimer = null;
+            }
+        }
+
+        function setLoaderText(value) {
+            if (loaderTextEl) {
+                loaderTextEl.textContent = value;
+            }
+        }
+
+        function resetProgress() {
+            if (progressContainer) {
+                progressContainer.hidden = true;
+            }
+            if (progressBar) {
+                progressBar.style.width = '0%';
+            }
+            if (progressPercent) {
+                progressPercent.textContent = '0%';
+            }
+            if (progressMessage) {
+                progressMessage.textContent = '';
+            }
+            if (progressDetail) {
+                progressDetail.textContent = '';
+                progressDetail.hidden = true;
+            }
+        }
+
+        function showOverlay() {
+            overlay.classList.add('is-visible');
+            overlay.setAttribute('aria-hidden', 'false');
+        }
+
+        function hideOverlay() {
+            overlay.classList.remove('is-visible');
+            overlay.setAttribute('aria-hidden', 'true');
+            resetProgress();
+            setLoaderText(defaultOverlayText);
+        }
+
+        window.addEventListener('pageshow', hideOverlay);
+
+        function setButtonsDisabled(state) {
+            triggerButtons.forEach((button) => {
+                button.disabled = state;
+            });
+        }
+
+        function schedulePoll(jobId) {
+            pollTimer = window.setTimeout(() => pollJob(jobId), 1200);
+        }
+
+        function formatDetail(job) {
+            const detail = job.detail || {};
+            const stage = job.stage || detail.stage || '';
+            if (stage === 'stations') {
+                const inserted = detail.stations_inserted ?? 0;
+                const updated = detail.stations_updated ?? 0;
+                return `Stationen neu: ${inserted} · aktualisiert: ${updated}`;
+            }
+            if (stage === 'daily') {
+                const total = detail.archives_total ?? 0;
+                const processed = detail.archives_processed ?? 0;
+                const failed = detail.archives_failed ?? 0;
+                const inserted = detail.daily_inserted ?? 0;
+                const updated = detail.daily_updated ?? 0;
+                const segments = [];
+                if (total) {
+                    segments.push(`Archive ${processed}/${total}`);
+                }
+                if (failed) {
+                    segments.push(`Fehler ${failed}`);
+                }
+                if (inserted || updated) {
+                    segments.push(`Neu ${inserted}, aktualisiert ${updated}`);
+                }
+                return segments.join(' · ');
+            }
+            if (stage === 'complete') {
+                const result = job.result || {};
+                if (job.job_type === 'weather') {
+                    const daily = result.daily || {};
+                    const processed = daily.archives_processed ?? 0;
+                    const failed = daily.archives_failed ?? 0;
+                    const total = processed + failed;
+                    if (total) {
+                        return `ZIPs: ${processed}/${total}`;
+                    }
+                }
+                if (job.job_type === 'stations') {
+                    const inserted = result.inserted ?? 0;
+                    const updated = result.updated ?? 0;
+                    return `Stationen neu: ${inserted}, aktualisiert: ${updated}`;
+                }
+            }
+            return '';
+        }
+
+        function updateOverlay(job) {
+            if (progressContainer) {
+                progressContainer.hidden = false;
+            }
+            const percent = Math.max(0, Math.min(100, Number(job.progress || 0)));
+            if (progressBar) {
+                progressBar.style.width = `${percent}%`;
+            }
+            if (progressPercent) {
+                progressPercent.textContent = `${Math.round(percent)}%`;
+            }
+            const stage = job.stage || (job.detail && job.detail.stage) || '';
+            const message = job.message || stageLabels[stage] || 'Import wird ausgeführt...';
+            if (progressMessage) {
+                progressMessage.textContent = message;
+            }
+            if (progressDetail) {
+                const detailText = formatDetail(job);
+                progressDetail.textContent = detailText;
+                progressDetail.hidden = !detailText;
+            }
+        }
+
+        function buildSummary(job) {
+            const result = job.result || {};
+            if (job.job_type === 'stations') {
+                const inserted = result.inserted ?? 0;
+                const updated = result.updated ?? 0;
+                return `Stationsdaten aktualisiert (neu: ${inserted}, aktualisiert: ${updated}).`;
+            }
+            if (job.job_type === 'weather') {
+                const stations = result.stations || {};
+                const daily = result.daily || {};
+                const insertedStations = stations.inserted ?? 0;
+                const updatedStations = stations.updated ?? 0;
+                const insertedDaily = daily.inserted ?? 0;
+                const updatedDaily = daily.updated ?? 0;
+                const processed = daily.archives_processed ?? 0;
+                const failed = daily.archives_failed ?? 0;
+                const archiveTotal = processed + failed;
+                const parts = [
+                    `Stationen neu: ${insertedStations}`,
+                    `aktualisiert: ${updatedStations}`,
+                    `Tageswerte neu: ${insertedDaily}`,
+                    `aktualisiert: ${updatedDaily}`,
+                    `ZIPs: ${processed}/${archiveTotal}`
+                ];
+                if (failed) {
+                    parts.push(`Fehler: ${failed}`);
+                }
+                return `Wetterdaten fertig (${parts.join(', ')}).`;
+            }
+            return 'Import abgeschlossen.';
+        }
+
+        function parseErrorMessage(message) {
+            if (!message) {
+                return 'Unbekannter Fehler';
+            }
+            return String(message);
+        }
+
+        function finishJob(job) {
+            clearTimer();
+            setButtonsDisabled(false);
+            updateOverlay(job);
+            const summary = buildSummary(job);
+            if (summary) {
+                showToast({kind: 'success', message: summary, autoDismiss: false});
+            }
+            activeJob = null;
+            setTimeout(() => {
+                hideOverlay();
+            }, 700);
+        }
+
+        function failJob(job, errorMessage) {
+            clearTimer();
+            setButtonsDisabled(false);
+            const message = parseErrorMessage(errorMessage || (job && job.error));
+            if (progressMessage) {
+                progressMessage.textContent = 'Import fehlgeschlagen';
+            }
+            if (progressDetail) {
+                progressDetail.textContent = message;
+                progressDetail.hidden = false;
+            }
+            showToast({kind: 'error', message: `Import fehlgeschlagen: ${message}`, autoDismiss: false});
+            activeJob = null;
+            setTimeout(() => {
+                hideOverlay();
+            }, 1100);
+        }
+
+        async function readError(response) {
+            try {
+                const payload = await response.json();
+                if (payload && typeof payload.error === 'string') {
+                    return payload.error;
+                }
+            } catch (err) {
+                // ignore parse errors
+            }
+            return `${response.status} ${response.statusText}`;
+        }
+
+        async function pollJob(jobId) {
+            try {
+                const url = statusUrlTemplate.replace('__JOB__', encodeURIComponent(jobId));
+                const response = await fetch(url, {cache: 'no-store'});
+                if (!response.ok) {
+                    const errorText = await readError(response);
+                    throw new Error(errorText);
+                }
+                const payload = await response.json();
+                if (!payload.ok) {
+                    throw new Error(payload.error || 'Unbekannter Fehler');
+                }
+                const job = payload.job;
+                updateOverlay(job);
+                if (job.status === 'completed') {
+                    finishJob(job);
+                    return;
+                }
+                if (job.status === 'failed') {
+                    failJob(job, job.error);
+                    return;
+                }
+                schedulePoll(jobId);
+            } catch (err) {
+                failJob({job_type: activeJob ? activeJob.kind : '', error: err instanceof Error ? err.message : String(err)}, err instanceof Error ? err.message : String(err));
+            }
+        }
+
+        async function startImport(kindRaw) {
+            const kind = (kindRaw || '').toLowerCase();
+            if (!kind || !['stations', 'weather'].includes(kind)) {
+                showToast({kind: 'error', message: 'Unbekannter Importtyp.', autoDismiss: false});
+                return;
+            }
+            if (activeJob) {
+                showToast({kind: 'warning', message: 'Ein Import läuft bereits.', autoDismiss: true});
+                return;
+            }
+            clearTimer();
+            resetProgress();
+            setLoaderText(kind === 'stations' ? 'Stationsdaten werden aktualisiert...' : 'Wetterdaten werden aktualisiert...');
+            if (progressContainer) {
+                progressContainer.hidden = false;
+            }
+            if (progressMessage) {
+                progressMessage.textContent = stageLabels.prepare;
+            }
+            if (progressPercent) {
+                progressPercent.textContent = '0%';
+            }
+            showOverlay();
+            setButtonsDisabled(true);
+            activeJob = {kind};
+            try {
+                const response = await fetch(startUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({kind})
+                });
+                if (!response.ok) {
+                    const errorText = await readError(response);
+                    throw new Error(errorText);
+                }
+                const payload = await response.json();
+                if (!payload.ok) {
+                    throw new Error(payload.error || 'Unbekannter Fehler');
+                }
+                const jobId = payload.job_id;
+                activeJob.id = jobId;
+                updateOverlay({progress: 0, stage: 'prepare', message: stageLabels.prepare, detail: {}, job_type: kind});
+                pollJob(jobId);
+            } catch (err) {
+                const message = err instanceof Error ? err.message : String(err);
+                showToast({kind: 'error', message: `Import konnte nicht gestartet werden: ${message}`, autoDismiss: false});
+                setButtonsDisabled(false);
+                activeJob = null;
+                hideOverlay();
+            }
+        }
+
+        triggerButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                startImport(button.dataset.importTrigger);
+            });
+        });
+
         document.querySelectorAll('form[data-show-loader="true"]').forEach((form) => {
             form.addEventListener('submit', () => {
+                if (activeJob) {
+                    return;
+                }
+                clearTimer();
+                resetProgress();
+                setLoaderText(defaultOverlayText);
                 showOverlay();
             });
         });
+
+        window.adminImport = {
+            start: startImport
+        };
     })();
 </script>
 </body>

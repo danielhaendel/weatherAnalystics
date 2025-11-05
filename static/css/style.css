@@ -303,6 +303,60 @@ body.theme-light .border-red-500\/50 {
     text-align: center;
 }
 
+.loading-overlay__progress {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.loading-overlay__progress[hidden] {
+    display: none;
+}
+
+.loading-overlay__progress-bar {
+    position: relative;
+    width: 100%;
+    height: 0.6rem;
+    border-radius: 9999px;
+    background: rgba(148, 163, 184, 0.25);
+    overflow: hidden;
+}
+
+.loading-overlay__progress-bar-fill {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #bef264 0%, #34d399 48%, #38bdf8 100%);
+    transition: width 0.4s ease;
+}
+
+.loading-overlay__progress-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #e2e8f0;
+}
+
+.loading-overlay__progress-percent {
+    font-weight: 600;
+    letter-spacing: 0.03em;
+}
+
+.loading-overlay__progress-message {
+    flex: 1;
+    margin-left: 0.75rem;
+    text-align: right;
+    color: #cbd5f5;
+}
+
+.loading-overlay__progress-detail {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    text-align: center;
+}
+
 body.theme-light .loading-overlay {
     background: rgba(248, 250, 252, 0.8);
 }
@@ -320,6 +374,22 @@ body.theme-light .preloader #cloud path {
 
 body.theme-light .loading-overlay__text {
     color: #1e293b;
+}
+
+body.theme-light .loading-overlay__progress-bar {
+    background: rgba(71, 85, 105, 0.2);
+}
+
+body.theme-light .loading-overlay__progress-meta {
+    color: #1e293b;
+}
+
+body.theme-light .loading-overlay__progress-message {
+    color: #334155;
+}
+
+body.theme-light .loading-overlay__progress-detail {
+    color: #475569;
 }
 
 @keyframes preloader-rotate {
