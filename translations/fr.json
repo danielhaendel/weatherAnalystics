@@ -32,7 +32,26 @@
     "theme_toggle_light_text": "Clair",
     "language_label": "Langue",
     "language_select_aria": "Choisir la langue de l'application",
-    "sync_button": "Mettre à jour les données"
+    "sync_button": "Mettre à jour les données",
+    "reports_headline": "Analyse météorologique",
+    "reports_subheadline": "Analysez les données météo historiques pour n'importe quelle adresse en Allemagne – choisissez votre rayon, votre période et la résolution.",
+    "granularity_label": "Résolution",
+    "granularity_option_daily": "Quotidienne",
+    "granularity_option_monthly": "Mensuelle",
+    "granularity_option_yearly": "Annuelle",
+    "report_generate": "Afficher l'analyse",
+    "report_table_title": "Vue tabulaire",
+    "report_chart_title": "Vue graphique",
+    "report_table_period": "Période",
+    "report_table_temp_avg": "Température moy. (°C)",
+    "report_table_temp_min": "Température min. (°C)",
+    "report_table_temp_max": "Température max. (°C)",
+    "report_table_precip": "Précipitations (mm)",
+    "report_table_sunshine": "Ensoleillement (h)",
+    "report_table_placeholder": "Aucune donnée pour le moment.",
+    "report_stations_heading": "Stations météo utilisées",
+    "report_station_distance": "Distance : {distance} km",
+    "reports_link": "Analyses"
   },
   "js": {
     "lang": "fr",
@@ -67,7 +86,16 @@
     "syncErrorDetails": "Impossible de mettre à jour les stations",
     "toastCloseAria": "Fermer la notification",
     "regionStationUnknown": "Aucune station disponible",
-    "regionStationDistance": "Distance jusqu'à la station : {distance} km"
+    "regionStationDistance": "Distance jusqu'à la station : {distance} km",
+    "reportsGenerating": "Analyse en cours ...",
+    "reportsNoStations": "Aucune station météo trouvée dans le rayon sélectionné.",
+    "reportsNoData": "Aucune donnée pour la période choisie.",
+    "reportsError": "L'analyse n'a pas pu être générée.",
+    "reportsCoverageError": "La période sélectionnée est en dehors des données disponibles.",
+    "reportsChartTemperatureLabel": "Température moy.",
+    "reportsChartPrecipLabel": "Précipitations",
+    "reportsChartSunshineLabel": "Ensoleillement",
+    "reportsValidationDates": "Veuillez choisir une période dans les données disponibles."
   },
   "messages": {
     "analysis_summary": "Analyse pour les coordonnées ({lat}, {lon}) en DE du {start} au {end}."

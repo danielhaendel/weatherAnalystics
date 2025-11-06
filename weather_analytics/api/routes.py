@@ -1,6 +1,5 @@
 # api/routes.py
 import os
-import time
 from datetime import date
 from math import radians, sin, cos, sqrt, atan2
 
@@ -9,6 +8,7 @@ from flask import Blueprint, request, jsonify, abort, current_app
 
 from ..dwd_kl_importer import import_station_metadata
 from ..db import get_db
+from ..report_service import ReportError, generate_report, get_coverage
 
 api_bp = Blueprint('api', __name__)
 
@@ -153,7 +153,6 @@ def validate_address():
 
 @api_bp.post('/analyze')
 def analyze():
-    time.sleep(10)
     data = request.get_json(force=True) or {}
     lat = data.get('lat')
     lon = data.get('lon')
@@ -300,3 +299,42 @@ def stations_nearest():
         lat, lon, best_row['station_id'], best_distance or -1.0
     )
     return jsonify(payload)
+
+
+@api_bp.get('/data/coverage')
+def data_coverage():
+    conn = get_db()
+    coverage = get_coverage(conn)
+    if not coverage:
+        return jsonify({'ok': False, 'error': 'no_data'}), 404
+    return jsonify({'ok': True, **coverage})
+
+
+@api_bp.post('/reports/aggregate')
+def aggregate_report():
+    payload = request.get_json(force=True) or {}
+    try:
+        lat = float(payload.get('lat'))
+        lon = float(payload.get('lon'))
+    except (TypeError, ValueError):
+        return jsonify({'ok': False, 'error': 'invalid_coordinates'}), 400
+
+    try:
+        radius = float(payload.get('radius') or 10.0)
+    except (TypeError, ValueError):
+        radius = 10.0
+
+    granularity = (payload.get('granularity') or 'day').lower()
+    start_date = payload.get('start_date')
+    end_date = payload.get('end_date')
+    if not start_date or not end_date:
+        return jsonify({'ok': False, 'error': 'missing_dates'}), 400
+
+    conn = get_db()
+    try:
+        report = generate_report(conn, lat, lon, radius, start_date, end_date, granularity)
+    except ReportError as exc:
+        status = 400 if exc.code in {'invalid_granularity', 'invalid_dates', 'invalid_range', 'out_of_bounds'} else 404
+        return jsonify({'ok': False, 'error': exc.code}), status
+
+    return jsonify({'ok': True, **report})

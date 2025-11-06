@@ -75,13 +75,11 @@ const lonField = document.getElementById('address_lon');
 const countryField = document.getElementById('address_country');
 const latLabel = document.getElementById('coord_lat');
 const lonLabel = document.getElementById('coord_lon');
-const regionLabel = document.getElementById('coord_region');
 const regionTitleEl = document.getElementById('coord_region_title');
 const regionMetaEl = document.getElementById('coord_region_meta');
 const regionStationNameEl = document.getElementById('coord_region_station');
 const regionStationBlockEl = document.getElementById('coord_region_station_block');
 const regionStationDistanceEl = document.getElementById('coord_region_distance');
-const resultBody = document.querySelector('#result .result-body');
 const toastContainer = document.getElementById('toast_container');
 
 let activeMarker = null;
@@ -97,6 +95,7 @@ const REGION_STATION_UNKNOWN = TEXT.regionStationUnknown || '--';
 const REGION_TITLE_DEFAULT = regionTitleEl?.dataset?.default || REGION_EMPTY_TEXT;
 const REGION_META_DEFAULT = regionMetaEl?.dataset?.default || REGION_DEFAULT_TEXT;
 const REGION_STATION_DEFAULT = regionStationNameEl?.dataset?.default || REGION_STATION_UNKNOWN;
+const coverageInfo = window.APP_COVERAGE || null;
 
 let regionLookupSeq = 0;
 let coordErrorToastClose = null;
@@ -421,15 +420,18 @@ function initDatePickers() {
     const endInput = document.getElementById('end_date');
     if (!startInput || !endInput) return;
 
+    const minDateStr = coverageInfo?.min_date || null;
+    const maxDateStr = coverageInfo?.max_date || null;
+
     if (typeof flatpickr === 'undefined') {
         startInput.type = 'date';
+        if (minDateStr) startInput.min = minDateStr;
+        if (maxDateStr) startInput.max = maxDateStr;
         endInput.type = 'date';
+        if (minDateStr) endInput.min = minDateStr;
+        if (maxDateStr) endInput.max = maxDateStr;
         return;
     }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const maxDate = new Date(today.getTime() - 24 * 60 * 60 * 1000);
 
     const resolvedLocale = (!TEXT.flatpickrLocale || TEXT.flatpickrLocale === 'default')
         ? 'en'
@@ -441,14 +443,15 @@ function initDatePickers() {
         allowInput: true,
         disableMobile: true,
         locale: resolvedLocale,
-        maxDate,
+        minDate: minDateStr,
+        maxDate: maxDateStr,
     };
 
     startPicker = flatpickr(startInput, {
         ...sharedConfig,
         onChange: (selectedDates, dateStr) => {
             if (endPicker) {
-                endPicker.set('minDate', dateStr || null);
+                endPicker.set('minDate', dateStr || minDateStr || null);
                 if (selectedDates.length && endPicker.selectedDates.length && endPicker.selectedDates[0] < selectedDates[0]) {
                     endPicker.clear();
                 }
@@ -463,7 +466,7 @@ function initDatePickers() {
         ...sharedConfig,
         onChange: (selectedDates, dateStr) => {
             if (startPicker) {
-                const newMax = dateStr || maxDate;
+                const newMax = dateStr || maxDateStr || null;
                 startPicker.set('maxDate', newMax);
                 if (selectedDates.length) {
                     const selectedEnd = selectedDates[0];
@@ -487,6 +490,22 @@ function initDatePickers() {
     if (endPicker && endInput.value) {
         endPicker.setDate(endInput.value, false);
         startPicker.set('maxDate', endInput.value);
+    }
+
+    if (coverageInfo && maxDateStr) {
+        const endDateObj = new Date(`${maxDateStr}T00:00:00`);
+        const startDateObj = new Date(endDateObj.getTime());
+        startDateObj.setDate(startDateObj.getDate() - 30);
+        const isoStart = startDateObj.toISOString().slice(0, 10);
+        const clampedStart = minDateStr && isoStart < minDateStr ? minDateStr : isoStart;
+        if (startPicker) {
+            startPicker.setDate(clampedStart, false);
+            startPicker.set('maxDate', maxDateStr);
+        }
+        if (endPicker) {
+            endPicker.setDate(maxDateStr, false);
+            endPicker.set('minDate', clampedStart);
+        }
     }
 
     const linkedInputs = [];
@@ -595,23 +614,32 @@ function validateForm(options = {}) {
     const startErr = document.getElementById('start_error');
     const endErr = document.getElementById('end_error');
 
-    const startVal = start.value;
-    const endVal = end.value;
-    const startPast = isPastDateStr(startVal);
-    const endPast = isPastDateStr(endVal);
-    const orderOk = startVal && endVal && (new Date(startVal) <= new Date(endVal));
+    const startVal = start.value || '';
+    const endVal = end.value || '';
 
-    const startValid = startVal && startPast;
-    toggleClass(start, 'is-invalid', !startValid);
-    toggleClass(startErr, 'hidden', startValid);
-    setDateInvalidState(startPicker, !startValid);
+    let datesValid = Boolean(startVal && endVal);
+    if (datesValid) {
+        if (startVal > endVal) {
+            datesValid = false;
+        }
+        if (coverageInfo) {
+            if (startVal < coverageInfo.min_date || endVal > coverageInfo.max_date) {
+                datesValid = false;
+            }
+        }
+    }
 
-    const endValid = endVal && endPast && orderOk;
-    toggleClass(end, 'is-invalid', !endValid);
-    toggleClass(endErr, 'hidden', endValid);
-    setDateInvalidState(endPicker, !endValid);
+    toggleClass(start, 'is-invalid', !datesValid || !startVal);
+    toggleClass(startErr, 'hidden', datesValid && Boolean(startVal));
+    setDateInvalidState(startPicker, !(datesValid && Boolean(startVal)));
 
-    if (!startValid || !endValid) ok = false;
+    toggleClass(end, 'is-invalid', !datesValid || !endVal);
+    toggleClass(endErr, 'hidden', datesValid && Boolean(endVal));
+    setDateInvalidState(endPicker, !(datesValid && Boolean(endVal)));
+
+    if (!datesValid) {
+        ok = false;
+    }
 
     if (coordsValid && suppressCoordinateToast) {
         showCoordinateError('');
@@ -791,45 +819,24 @@ function initLanguageSelector() {
 function setupAnalyzeButton() {
   const button = document.getElementById('analyze_btn');
   if (!button) return;
-  button.addEventListener('click', async () => {
-    if (!resultBody) return;
+  button.addEventListener('click', () => {
     if (!validateForm()) {
-      resultBody.textContent = TEXT.analyzeCheckInputs;
+      showToast({ kind: 'warning', message: TEXT.analyzeCheckInputs, duration: 4000 });
       return;
     }
 
-    const regionText = getRegionDisplayText();
-    const addressLabel = regionTitleEl?.textContent === REGION_LOADING_TEXT
-      ? REGION_DEFAULT_TEXT
-      : regionText;
+    const form = document.getElementById('report_form');
+    if (!form) return;
 
-        const payload = {
-            address_1: addressLabel,
-            lat: parseFloat(latField.value),
-            lon: parseFloat(lonField.value),
-            country_code: (countryField.value || '').toLowerCase(),
-            radius: parseInt(document.getElementById('radius').value, 10),
-            start_date: document.getElementById('start_date').value,
-            end_date: document.getElementById('end_date').value,
-            lang: CURRENT_LANG,
-        };
+    form.elements.namedItem('lat').value = latField.value;
+    form.elements.namedItem('lon').value = lonField.value;
+    form.elements.namedItem('radius').value = document.getElementById('radius').value;
+    form.elements.namedItem('start_date').value = document.getElementById('start_date').value;
+    form.elements.namedItem('end_date').value = document.getElementById('end_date').value;
+    form.elements.namedItem('granularity').value = document.getElementById('granularity').value;
 
-        showLoading(true);
-        resultBody.textContent = '';
-        try {
-            const data = await postJSON('/api/analyze', payload);
-      resultBody.textContent = data.summary || TEXT.analysisNoData;
-    } catch (err) {
-      const message = `${TEXT.analysisErrorPrefix}: ${err.message}`;
-      resultBody.textContent = message;
-      showToast({
-        kind: 'error',
-        title: TEXT.analysisErrorPrefix,
-        message: err?.message || message,
-      });
-    } finally {
-      showLoading(false);
-    }
+    showLoading(true);
+    form.submit();
   });
 }
 

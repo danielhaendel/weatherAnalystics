@@ -32,7 +32,26 @@
     "theme_toggle_light_text": "Jasny",
     "language_label": "Język",
     "language_select_aria": "Wybierz język aplikacji",
-    "sync_button": "Odśwież dane"
+    "sync_button": "Odśwież dane",
+    "reports_headline": "Analiza pogodowa",
+    "reports_subheadline": "Analizuj historyczne dane pogodowe dla dowolnego miejsca w Niemczech – wybierz promień, przedział czasu i rozdzielczość.",
+    "granularity_label": "Rozdzielczość",
+    "granularity_option_daily": "Dzienna",
+    "granularity_option_monthly": "Miesięczna",
+    "granularity_option_yearly": "Roczna",
+    "report_generate": "Pokaż raport",
+    "report_table_title": "Widok tabelaryczny",
+    "report_chart_title": "Widok graficzny",
+    "report_table_period": "Okres",
+    "report_table_temp_avg": "Śr. temp. (°C)",
+    "report_table_temp_min": "Min. temp. (°C)",
+    "report_table_temp_max": "Maks. temp. (°C)",
+    "report_table_precip": "Opady (mm)",
+    "report_table_sunshine": "Godziny słońca (h)",
+    "report_table_placeholder": "Brak danych.",
+    "report_stations_heading": "Wykorzystane stacje pogodowe",
+    "report_station_distance": "Odległość: {distance} km",
+    "reports_link": "Raporty"
   },
   "js": {
     "lang": "pl",
@@ -67,7 +86,16 @@
     "syncErrorDetails": "Nie udało się odświeżyć danych stacji",
     "toastCloseAria": "Zamknij powiadomienie",
     "regionStationUnknown": "Brak danych o stacji",
-    "regionStationDistance": "Odległość do stacji: {distance} km"
+    "regionStationDistance": "Odległość do stacji: {distance} km",
+    "reportsGenerating": "Trwa tworzenie raportu ...",
+    "reportsNoStations": "Brak stacji pogodowych w wybranym promieniu.",
+    "reportsNoData": "Brak danych dla wybranego okresu.",
+    "reportsError": "Nie udało się utworzyć raportu.",
+    "reportsCoverageError": "Wybrany okres wykracza poza dostępne dane.",
+    "reportsChartTemperatureLabel": "Śr. temperatura",
+    "reportsChartPrecipLabel": "Opady",
+    "reportsChartSunshineLabel": "Godziny słońca",
+    "reportsValidationDates": "Wybierz okres mieszczący się w dostępnych danych."
   },
   "messages": {
     "analysis_summary": "Analiza dla współrzędnych ({lat}, {lon}) w DE od {start} do {end}."

@@ -92,6 +92,10 @@
                         <path d="m19.07 4.93-1.41 1.41" />
                     </svg>
                 </button>
+                <a href="{{ url_for('reports') }}"
+                   class="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200 transition hover:border-lime-400 hover:text-white">
+                    {{ ui['reports_link'] }}
+                </a>
             </div>
         </div>
 
@@ -128,19 +132,28 @@
                                            class="date-input w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-slate-100 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/60" placeholder="{{ js_strings['datePlaceholder'] }}" autocomplete="off">
                                     <span id="start_error" class="hidden text-xs font-normal text-red-300">{{ ui['start_date_error'] }}</span>
                                 </label>
-                                <label class="flex flex-col gap-2 text-sm font-medium text-slate-300">
-                                    <span>{{ ui['end_date_label'] }}</span>
-                                    <input id="end_date" type="text"
-                                           class="date-input w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-slate-100 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/60" placeholder="{{ js_strings['datePlaceholder'] }}" autocomplete="off">
-                                    <span id="end_error"
-                                          class="hidden text-xs font-normal text-red-300">{{ ui['end_date_error'] }}</span>
-                                </label>
-                            </div>
+                            <label class="flex flex-col gap-2 text-sm font-medium text-slate-300">
+                                <span>{{ ui['end_date_label'] }}</span>
+                                <input id="end_date" type="text"
+                                       class="date-input w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-slate-100 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/60" placeholder="{{ js_strings['datePlaceholder'] }}" autocomplete="off">
+                                <span id="end_error"
+                                      class="hidden text-xs font-normal text-red-300">{{ ui['end_date_error'] }}</span>
+                            </label>
+                        </div>
 
-                            <button id="analyze_btn"
-                                    class="w-full rounded-2xl bg-gradient-to-r from-lime-400 via-emerald-400 to-sky-400 px-6 py-3 text-base font-semibold text-slate-950 transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-lime-300/40">
-                                {{ ui['analyze_button'] }}
-                            </button>
+                        <div>
+                            <label for="granularity" class="mb-2 block text-sm font-medium text-slate-300">{{ ui['granularity_label'] }}</label>
+                            <select id="granularity" class="w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/60">
+                                <option value="day">{{ ui['granularity_option_daily'] }}</option>
+                                <option value="month">{{ ui['granularity_option_monthly'] }}</option>
+                                <option value="year">{{ ui['granularity_option_yearly'] }}</option>
+                            </select>
+                        </div>
+
+                        <button id="analyze_btn"
+                                class="w-full rounded-2xl bg-gradient-to-r from-lime-400 via-emerald-400 to-sky-400 px-6 py-3 text-base font-semibold text-slate-950 transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-lime-300/40">
+                            {{ ui['analyze_button'] }}
+                        </button>
                         </div>
                     </div>
 
@@ -158,7 +171,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="flex flex-col rounded-2xl border border-white/5 bg-slate-900/70 p-4" style="height: 21vh;">
+                        <div class="flex flex-col rounded-2xl border border-white/5 bg-slate-900/70 p-4">
                             <p class="text-xs uppercase tracking-wide text-slate-400">{{ ui['coord_region_label'] }}</p>
                             <div id="coord_region" class="mt-3 space-y-4">
                                 <div>
@@ -179,6 +192,15 @@
     </div>
 </div>
 
+<form id="report_form" method="get" action="{{ url_for('reports') }}" class="hidden">
+    <input type="hidden" name="lat">
+    <input type="hidden" name="lon">
+    <input type="hidden" name="radius">
+    <input type="hidden" name="start_date">
+    <input type="hidden" name="end_date">
+    <input type="hidden" name="granularity">
+</form>
+
 <footer class="border-t border-white/10 bg-slate-950/80 py-6 text-sm text-slate-400">
     <div class="mx-auto flex w-full max-w-6xl flex-col gap-2 px-6 md:flex-row md:items-center md:justify-between md:px-12">
         <span>© {{ ui['title'] }}</span>
@@ -197,6 +219,7 @@
         lang: {{ current_language|tojson }},
         js: {{ js_strings|tojson }}
     };
+    window.APP_COVERAGE = {{ coverage|tojson }};
 </script>
 <div id="toast_container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>

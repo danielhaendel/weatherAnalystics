@@ -32,7 +32,26 @@
     "theme_toggle_light_text": "Claro",
     "language_label": "Idioma",
     "language_select_aria": "Elegir el idioma de la aplicación",
-    "sync_button": "Actualizar datos"
+    "sync_button": "Actualizar datos",
+    "reports_headline": "Análisis meteorológico",
+    "reports_subheadline": "Analiza datos meteorológicos históricos para cualquier dirección en Alemania – elige radio, periodo y resolución.",
+    "granularity_label": "Resolución",
+    "granularity_option_daily": "Diaria",
+    "granularity_option_monthly": "Mensual",
+    "granularity_option_yearly": "Anual",
+    "report_generate": "Mostrar informe",
+    "report_table_title": "Vista tabular",
+    "report_chart_title": "Vista gráfica",
+    "report_table_period": "Periodo",
+    "report_table_temp_avg": "Temp. media (°C)",
+    "report_table_temp_min": "Temp. mínima (°C)",
+    "report_table_temp_max": "Temp. máxima (°C)",
+    "report_table_precip": "Precipitación (mm)",
+    "report_table_sunshine": "Horas de sol (h)",
+    "report_table_placeholder": "Aún no hay datos.",
+    "report_stations_heading": "Estaciones meteorológicas usadas",
+    "report_station_distance": "Distancia: {distance} km",
+    "reports_link": "Informes"
   },
   "js": {
     "lang": "es",
@@ -67,7 +86,16 @@
     "syncErrorDetails": "No se pudieron actualizar las estaciones",
     "toastCloseAria": "Cerrar notificación",
     "regionStationUnknown": "Sin datos de estaciones disponibles",
-    "regionStationDistance": "Distancia a la estación: {distance} km"
+    "regionStationDistance": "Distancia a la estación: {distance} km",
+    "reportsGenerating": "Generando informe ...",
+    "reportsNoStations": "No se encontraron estaciones meteorológicas dentro del radio seleccionado.",
+    "reportsNoData": "No hay datos para el periodo seleccionado.",
+    "reportsError": "No se pudo generar el informe.",
+    "reportsCoverageError": "El periodo seleccionado está fuera de los datos disponibles.",
+    "reportsChartTemperatureLabel": "Temp. media",
+    "reportsChartPrecipLabel": "Precipitación",
+    "reportsChartSunshineLabel": "Horas de sol",
+    "reportsValidationDates": "Seleccione un periodo dentro de los datos disponibles."
   },
   "messages": {
     "analysis_summary": "Análisis para las coordenadas ({lat}, {lon}) en DE del {start} al {end}."

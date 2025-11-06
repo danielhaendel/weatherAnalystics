@@ -11,7 +11,8 @@ from flask import Flask, make_response, render_template, request
 
 from .api import api_bp
 from .auth import auth_bp, init_auth
-from .db import ensure_database, init_app as init_db_app
+from .db import ensure_database, get_db, init_app as init_db_app
+from .report_service import ReportError, generate_report, get_coverage as get_report_coverage
 
 PACKAGE_ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = PACKAGE_ROOT.parent
@@ -88,9 +89,7 @@ def create_app() -> Flask:
         for code in SUPPORTED_LANGUAGES
     ]
 
-    @app.get('/')
-    def index():
-        """Render index page with localized content."""
+    def _build_page_context():
         resolved_lang = resolve_language()
         translation = TRANSLATIONS[resolved_lang]
         ui_strings = translation['ui']
@@ -99,6 +98,14 @@ def create_app() -> Flask:
             (opt for opt in language_options if opt['code'] == resolved_lang),
             language_options[0],
         )
+        return resolved_lang, ui_strings, js_strings, current_option
+
+    @app.get('/')
+    def index():
+        """Render index page with localized content."""
+        resolved_lang, ui_strings, js_strings, current_option = _build_page_context()
+        conn = get_db()
+        coverage = get_report_coverage(conn)
 
         response = make_response(
             render_template(
@@ -109,12 +116,80 @@ def create_app() -> Flask:
                 languages=language_options,
                 current_language=resolved_lang,
                 current_language_option=current_option,
+                coverage=coverage,
             )
         )
 
         if request.args.get('lang', type=str) in SUPPORTED_LANGUAGES:
             response.set_cookie('lang', resolved_lang, max_age=60 * 60 * 24 * 365, samesite='Lax')
 
+        return response
+
+
+    @app.get('/reports')
+    def reports():
+        """Render aggregated weather report."""
+        resolved_lang, ui_strings, js_strings, current_option = _build_page_context()
+        conn = get_db()
+        coverage = get_report_coverage(conn)
+
+        report = None
+        chart_data = None
+        error_message = ui_strings.get('report_table_placeholder', 'Bitte starte die Auswertung auf der Hauptseite.')
+
+        required = {'lat', 'lon', 'radius', 'start_date', 'end_date', 'granularity'}
+        if required.issubset(request.args.keys()):
+            try:
+                lat = float(request.args.get('lat'))
+                lon = float(request.args.get('lon'))
+                radius = float(request.args.get('radius') or 10.0)
+                start_date = request.args.get('start_date')
+                end_date = request.args.get('end_date')
+                granularity = (request.args.get('granularity') or 'day').lower()
+                report = generate_report(conn, lat, lon, radius, start_date, end_date, granularity)
+                report['period_count'] = len(report['periods'])
+                report['station_count'] = len(report['stations'])
+                chart_data = {
+                    'labels': [row['period'] for row in report['periods']],
+                    'tempAvg': [row['temp_avg'] for row in report['periods']],
+                    'precipitation': [row['precipitation'] for row in report['periods']],
+                    'sunshine': [row['sunshine'] for row in report['periods']],
+                    'labelsTemp': js_strings.get('reportsChartTemperatureLabel', 'Avg temperature'),
+                    'labelsPrecip': js_strings.get('reportsChartPrecipLabel', 'Precipitation'),
+                    'labelsSunshine': js_strings.get('reportsChartSunshineLabel', 'Sunshine'),
+                }
+                error_message = ''
+            except (ValueError, ReportError) as exc:
+                if isinstance(exc, ReportError):
+                    mapping = {
+                        'out_of_bounds': js_strings.get('reportsCoverageError'),
+                        'no_stations': js_strings.get('reportsNoStations'),
+                        'no_data': js_strings.get('reportsNoData'),
+                        'invalid_range': js_strings.get('reportsValidationDates'),
+                        'invalid_granularity': js_strings.get('reportsValidationDates'),
+                        'invalid_dates': js_strings.get('reportsValidationDates'),
+                    }
+                    error_message = mapping.get(exc.code, js_strings.get('reportsError'))
+                else:
+                    error_message = js_strings.get('reportsError')
+
+        response = make_response(
+            render_template(
+                'reports.html',
+                lang=resolved_lang,
+                ui=ui_strings,
+                js_strings=js_strings,
+                languages=language_options,
+                current_language=resolved_lang,
+                current_language_option=current_option,
+                coverage=coverage,
+                report=report,
+                chart_data=chart_data,
+                error_message=error_message,
+            )
+        )
+        if request.args.get('lang', type=str) in SUPPORTED_LANGUAGES:
+            response.set_cookie('lang', resolved_lang, max_age=60 * 60 * 24 * 365, samesite='Lax')
         return response
 
     return app
