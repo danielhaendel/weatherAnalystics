@@ -79,8 +79,8 @@ const regionLabel = document.getElementById('coord_region');
 const regionTitleEl = document.getElementById('coord_region_title');
 const regionMetaEl = document.getElementById('coord_region_meta');
 const regionStationNameEl = document.getElementById('coord_region_station');
+const regionStationBlockEl = document.getElementById('coord_region_station_block');
 const regionStationDistanceEl = document.getElementById('coord_region_distance');
-const coordError = document.getElementById('coord_error');
 const resultBody = document.querySelector('#result .result-body');
 const toastContainer = document.getElementById('toast_container');
 
@@ -99,6 +99,7 @@ const REGION_META_DEFAULT = regionMetaEl?.dataset?.default || REGION_DEFAULT_TEX
 const REGION_STATION_DEFAULT = regionStationNameEl?.dataset?.default || REGION_STATION_UNKNOWN;
 
 let regionLookupSeq = 0;
+let coordErrorToastClose = null;
 
 const MAX_LEAFLET_ATTEMPTS = 20;
 const LEAFLET_RETRY_DELAY_MS = 150;
@@ -151,6 +152,13 @@ function setRegionLabel(title, { meta, stationName, stationDistance } = {}) {
   if (regionTitleEl) regionTitleEl.textContent = resolvedTitle;
   if (regionMetaEl) regionMetaEl.textContent = resolvedMeta;
   if (regionStationNameEl) regionStationNameEl.textContent = resolvedStation;
+
+  const hasStationDetails = Boolean(stationDistance) ||
+    (resolvedStation && resolvedStation !== REGION_STATION_DEFAULT);
+
+  if (regionStationBlockEl) {
+    regionStationBlockEl.classList.toggle('hidden', !hasStationDetails);
+  }
 
   if (regionStationDistanceEl) {
     if (stationDistance) {
@@ -300,13 +308,19 @@ function resetCoordinateSummary() {
 }
 
 function showCoordinateError(message) {
-    if (!coordError) return;
-    if (message) {
-        coordError.textContent = message;
-        toggleClass(coordError, 'hidden', false);
-    } else {
-        toggleClass(coordError, 'hidden', true);
+    if (coordErrorToastClose) {
+        coordErrorToastClose();
+        coordErrorToastClose = null;
     }
+    if (!message) {
+        return;
+    }
+    coordErrorToastClose = showToast({
+        kind: 'warning',
+        message,
+        autoDismiss: true,
+        duration: 5000,
+    });
 }
 
 function markMapUnavailable(message = TEXT.mapUnavailable) {
@@ -439,10 +453,10 @@ function initDatePickers() {
                     endPicker.clear();
                 }
             }
-            validateForm();
+            validateForm({ suppressCoordinateToast: true });
         },
-        onClose: () => validateForm(),
-        onValueUpdate: () => validateForm(),
+        onClose: () => validateForm({ suppressCoordinateToast: true }),
+        onValueUpdate: () => validateForm({ suppressCoordinateToast: true }),
     });
 
     endPicker = flatpickr(endInput, {
@@ -459,10 +473,10 @@ function initDatePickers() {
                     }
                 }
             }
-            validateForm();
+            validateForm({ suppressCoordinateToast: true });
         },
-        onClose: () => validateForm(),
-        onValueUpdate: () => validateForm(),
+        onClose: () => validateForm({ suppressCoordinateToast: true }),
+        onValueUpdate: () => validateForm({ suppressCoordinateToast: true }),
     });
 
     if (startPicker && startInput.value) {
@@ -484,7 +498,7 @@ function initDatePickers() {
         input.classList.add('date-field');
     });
 
-    validateForm();
+    validateForm({ suppressCoordinateToast: true });
 }
 
 function getStoredTheme() {
@@ -560,16 +574,19 @@ function initThemeToggle() {
     }
 }
 
-function validateForm() {
+function validateForm(options = {}) {
+    const { suppressCoordinateToast = false } = options;
     let ok = true;
 
     const lat = parseFloat(latField.value);
     const lon = parseFloat(lonField.value);
     const coordsValid = Number.isFinite(lat) && Number.isFinite(lon) && isInGermany(lat, lon);
     if (!coordsValid) {
-        showCoordinateError(TEXT.validateSelectGermany);
+        if (!suppressCoordinateToast) {
+            showCoordinateError(TEXT.validateSelectGermany);
+        }
         ok = false;
-    } else {
+    } else if (!suppressCoordinateToast) {
         showCoordinateError('');
     }
 
@@ -595,6 +612,10 @@ function validateForm() {
     setDateInvalidState(endPicker, !endValid);
 
     if (!startValid || !endValid) ok = false;
+
+    if (coordsValid && suppressCoordinateToast) {
+        showCoordinateError('');
+    }
     return ok;
 }
 
@@ -819,7 +840,7 @@ function setupAnalyzeButton() {
     initRadiusSlider();
     initDatePickers();
     setupAnalyzeButton();
-    validateForm();
+    validateForm({ suppressCoordinateToast: true });
     try {
         await ensureLeafletReady();
         initMap();
