@@ -160,10 +160,10 @@ class DwdKlImporter:
         """Import station metadata and all available historical KL daily data."""
         with self._application_context():
             self._ensure_schema()
-            self._update_progress(1.0, 'Import wird vorbereitet', {'stage': 'prepare'})
+            self._update_progress(0.0, 'Import wird vorbereitet', {'stage': 'prepare'})
             station_stats = self._import_stations()
             self._update_progress(
-                20.0,
+                100.0,
                 'Stationsdaten importiert',
                 {
                     'stage': 'stations',
@@ -191,7 +191,7 @@ class DwdKlImporter:
         """Import only station metadata."""
         with self._application_context():
             self._ensure_schema()
-            self._update_progress(1.0, 'Stationsimport wird vorbereitet', {'stage': 'prepare'})
+            self._update_progress(0.0, 'Stationsimport wird vorbereitet', {'stage': 'prepare'})
             stats = self._import_stations()
             self._update_progress(
                 100.0,
@@ -401,6 +401,18 @@ class DwdKlImporter:
         total_archives = len(archives)
         conn = self._get_connection()
         stats = DailyImportStats()
+        self._update_progress(
+            0.0,
+            'Dateien werden vorbereitet',
+            {
+                'stage': 'daily',
+                'archives_total': total_archives,
+                'archives_processed': 0,
+                'archives_failed': 0,
+                'daily_inserted': 0,
+                'daily_updated': 0,
+            },
+        )
         for index, (filename, meta) in enumerate(archives, start=1):
             file_inserted = 0
             file_updated = 0
@@ -422,7 +434,7 @@ class DwdKlImporter:
             finally:
                 processed_total = stats.archives_processed + stats.archives_failed
                 fraction = processed_total / total_archives if total_archives else 1.0
-                percent = 20.0 + 80.0 * fraction
+                percent = fraction * 100.0
                 detail = {
                     'stage': 'daily',
                     'current_archive': filename,
@@ -436,9 +448,9 @@ class DwdKlImporter:
                     'last_archive_success': success,
                 }
                 message = (
-                    f'Verarbeite Archiv {processed_total}/{total_archives}'
+                    f'Verarbeite Datei {processed_total}/{total_archives}'
                     if total_archives
-                    else 'Tagesarchive werden verarbeitet'
+                    else 'Tagesdateien werden verarbeitet'
                 )
                 self._update_progress(percent, message, detail)
         return stats

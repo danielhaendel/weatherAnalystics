@@ -354,7 +354,9 @@ body.theme-light .border-red-500\/50 {
 .loading-overlay__progress-detail {
     font-size: 0.78rem;
     color: #94a3b8;
-    text-align: center;
+    text-align: left;
+    white-space: pre-line;
+    align-self: stretch;
 }
 
 body.theme-light .loading-overlay {

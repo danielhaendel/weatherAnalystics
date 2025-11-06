@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600&display=swap"
           rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     <style>
         body {
             font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont;
@@ -305,6 +306,26 @@
             }
         }
 
+        function setProgressDetail(text) {
+            if (!progressDetail) {
+                return;
+            }
+            progressDetail.innerHTML = '';
+            const content = typeof text === 'string' ? text : text == null ? '' : String(text);
+            if (!content) {
+                progressDetail.hidden = true;
+                return;
+            }
+            const lines = content.split('\n');
+            lines.forEach((line, index) => {
+                progressDetail.appendChild(document.createTextNode(line));
+                if (index < lines.length - 1) {
+                    progressDetail.appendChild(document.createElement('br'));
+                }
+            });
+            progressDetail.hidden = false;
+        }
+
         function resetProgress() {
             if (progressContainer) {
                 progressContainer.hidden = true;
@@ -318,10 +339,7 @@
             if (progressMessage) {
                 progressMessage.textContent = '';
             }
-            if (progressDetail) {
-                progressDetail.textContent = '';
-                progressDetail.hidden = true;
-            }
+            setProgressDetail('');
         }
 
         function showOverlay() {
@@ -354,7 +372,7 @@
             if (stage === 'stations') {
                 const inserted = detail.stations_inserted ?? 0;
                 const updated = detail.stations_updated ?? 0;
-                return `Stationen neu: ${inserted} · aktualisiert: ${updated}`;
+                return [`Stationen neu ${inserted}`, `Aktualisiert ${updated}`].join('\n');
             }
             if (stage === 'daily') {
                 const total = detail.archives_total ?? 0;
@@ -362,17 +380,14 @@
                 const failed = detail.archives_failed ?? 0;
                 const inserted = detail.daily_inserted ?? 0;
                 const updated = detail.daily_updated ?? 0;
-                const segments = [];
-                if (total) {
-                    segments.push(`Archive ${processed}/${total}`);
-                }
+                const lines = [];
+                lines.push(`Dateien ${processed}/${total}`);
+                lines.push(`Neu ${inserted}`);
+                lines.push(`Aktualisiert ${updated}`);
                 if (failed) {
-                    segments.push(`Fehler ${failed}`);
+                    lines.push(`Fehler ${failed}`);
                 }
-                if (inserted || updated) {
-                    segments.push(`Neu ${inserted}, aktualisiert ${updated}`);
-                }
-                return segments.join(' · ');
+                return lines.join('\n');
             }
             if (stage === 'complete') {
                 const result = job.result || {};
@@ -382,7 +397,7 @@
                     const failed = daily.archives_failed ?? 0;
                     const total = processed + failed;
                     if (total) {
-                        return `ZIPs: ${processed}/${total}`;
+                        return `Dateien ${processed}/${total}`;
                     }
                 }
                 if (job.job_type === 'stations') {
@@ -410,11 +425,7 @@
             if (progressMessage) {
                 progressMessage.textContent = message;
             }
-            if (progressDetail) {
-                const detailText = formatDetail(job);
-                progressDetail.textContent = detailText;
-                progressDetail.hidden = !detailText;
-            }
+            setProgressDetail(formatDetail(job));
         }
 
         function buildSummary(job) {
@@ -439,7 +450,7 @@
                     `aktualisiert: ${updatedStations}`,
                     `Tageswerte neu: ${insertedDaily}`,
                     `aktualisiert: ${updatedDaily}`,
-                    `ZIPs: ${processed}/${archiveTotal}`
+                    `Dateien: ${processed}/${archiveTotal}`
                 ];
                 if (failed) {
                     parts.push(`Fehler: ${failed}`);
@@ -477,10 +488,7 @@
             if (progressMessage) {
                 progressMessage.textContent = 'Import fehlgeschlagen';
             }
-            if (progressDetail) {
-                progressDetail.textContent = message;
-                progressDetail.hidden = false;
-            }
+            setProgressDetail(message);
             showToast({kind: 'error', message: `Import fehlgeschlagen: ${message}`, autoDismiss: false});
             activeJob = null;
             setTimeout(() => {
