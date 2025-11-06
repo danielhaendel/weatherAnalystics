@@ -1,7 +1,0 @@
-- Admin und login page muss mit in die Translations
-
-
-Optional:
-- Register page
-- API Keys
-- Endpoint for WeatherData
