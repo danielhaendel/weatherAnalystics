@@ -12,7 +12,6 @@ from flask import Flask, make_response, render_template, request
 from .api import api_bp
 from .auth import auth_bp, init_auth
 from .db import ensure_database, init_app as init_db_app
-from .dwd_kl_importer import import_station_metadata
 
 PACKAGE_ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = PACKAGE_ROOT.parent
@@ -79,16 +78,6 @@ def create_app() -> Flask:
     init_auth(app)
     app.register_blueprint(auth_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
-
-    try:
-        sync_result = import_station_metadata(app)
-        app.logger.info(
-            'Initial station sync result: inserted=%s updated=%s',
-            sync_result.get('inserted', 0),
-            sync_result.get('updated', 0),
-        )
-    except Exception as exc:  # pragma: no cover - defensive
-        app.logger.exception('Initial station sync failed: %s', exc)
 
     language_options = [
         {

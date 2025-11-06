@@ -5,7 +5,6 @@ from __future__ import annotations
 import csv
 import datetime as dt
 import io
-import json
 import logging
 import re
 import sqlite3
@@ -33,6 +32,25 @@ SQLITE_LOCK_RETRIES = 5
 SQLITE_LOCK_SLEEP = 1.0
 SQLITE_BUSY_TIMEOUT_MS = 60_000
 
+GERMAN_STATE_NAMES = {
+    'Baden-Württemberg',
+    'Bayern',
+    'Berlin',
+    'Brandenburg',
+    'Bremen',
+    'Hamburg',
+    'Hessen',
+    'Mecklenburg-Vorpommern',
+    'Niedersachsen',
+    'Nordrhein-Westfalen',
+    'Rheinland-Pfalz',
+    'Saarland',
+    'Sachsen',
+    'Sachsen-Anhalt',
+    'Schleswig-Holstein',
+    'Thüringen',
+}
+
 DAILY_COLUMN_TYPES: Dict[str, str] = {
     'qn_3': 'int',
     'fx': 'float',
@@ -54,9 +72,11 @@ DAILY_COLUMN_TYPES: Dict[str, str] = {
 }
 
 SCHEMA_STATEMENTS = (
+    "DROP TABLE IF EXISTS daily_kl;",
+    "DROP TABLE IF EXISTS stations;",
     """
-    CREATE TABLE IF NOT EXISTS stations (
-        station_id TEXT PRIMARY KEY,
+    CREATE TABLE stations (
+        station_id INTEGER PRIMARY KEY,
         station_name TEXT,
         state TEXT,
         latitude REAL,
@@ -64,15 +84,12 @@ SCHEMA_STATEMENTS = (
         height REAL,
         from_date TEXT,
         to_date TEXT,
-        operating_from TEXT,
-        operating_to TEXT,
-        raw_data TEXT,
         updated_at TEXT NOT NULL
     )
     """,
     """
-    CREATE TABLE IF NOT EXISTS daily_kl (
-        station_id TEXT NOT NULL,
+    CREATE TABLE daily_kl (
+        station_id INTEGER NOT NULL,
         date TEXT NOT NULL,
         qn_3 INTEGER,
         fx REAL,
@@ -238,9 +255,6 @@ class DwdKlImporter:
             'height': 'REAL',
             'from_date': 'TEXT',
             'to_date': 'TEXT',
-            'operating_from': 'TEXT',
-            'operating_to': 'TEXT',
-            'raw_data': 'TEXT',
             'updated_at': 'TEXT',
         }
         existing_columns = {row['name'] for row in conn.execute('PRAGMA table_info(stations)')}
@@ -264,6 +278,10 @@ class DwdKlImporter:
         text = response.content.decode('iso-8859-1')
         response.close()
         parsed_rows = self._parse_station_rows(text)
+        if not parsed_rows:
+            self.logger.warning('No station rows parsed from metadata file.')
+        else:
+            self.logger.info('Example station row parsed: %s', parsed_rows[0])
 
         conn = self._get_connection()
         timestamp = dt.datetime.utcnow().isoformat(timespec='seconds')
@@ -300,11 +318,8 @@ class DwdKlImporter:
                 record.get('latitude'),
                 record.get('longitude'),
                 record.get('height'),
-                record.get('operating_from'),
-                record.get('operating_to'),
-                record.get('operating_from'),
-                record.get('operating_to'),
-                json.dumps(record.get('raw') or {}, ensure_ascii=False),
+                record.get('from_date'),
+                record.get('to_date'),
                 timestamp,
             )
             for record in records
@@ -314,8 +329,8 @@ class DwdKlImporter:
             """
             INSERT INTO stations (
                 station_id, station_name, state, latitude, longitude, height,
-                from_date, to_date, operating_from, operating_to, raw_data, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                from_date, to_date, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(station_id) DO UPDATE SET
                 station_name = excluded.station_name,
                 state = excluded.state,
@@ -324,9 +339,6 @@ class DwdKlImporter:
                 height = excluded.height,
                 from_date = excluded.from_date,
                 to_date = excluded.to_date,
-                operating_from = excluded.operating_from,
-                operating_to = excluded.operating_to,
-                raw_data = excluded.raw_data,
                 updated_at = excluded.updated_at
             """,
             params,
@@ -337,43 +349,102 @@ class DwdKlImporter:
         return inserted, updated
 
     def _parse_station_rows(self, text: str) -> List[Dict[str, Optional[str]]]:
-        lines = [line for line in text.splitlines() if line and not line.startswith('#')]
+        lines = [line for line in text.splitlines() if line.strip() and not line.startswith('#')]
         if not lines:
             return []
-        reader = csv.reader(io.StringIO('\n'.join(lines)), delimiter=';')
-        headers: Optional[List[str]] = None
-        rows: List[Dict[str, Optional[str]]] = []
-        for raw_row in reader:
-            if not raw_row:
-                continue
-            if headers is None:
-                headers = [column.strip().lower() for column in raw_row]
-                continue
-            payload = {headers[index]: raw_row[index].strip() for index in range(min(len(headers), len(raw_row)))}
-            station_id = payload.get('stations_id')
-            if not station_id:
-                continue
-            operating_from = self._normalize_date(payload.get('von_datum'))
-            operating_to = self._normalize_date(payload.get('bis_datum'))
-            latitude = self._convert_value(payload.get('geobreite') or payload.get('geo breite') or payload.get('geogr. breite'))
-            longitude = self._convert_value(payload.get('geolaenge') or payload.get('geo laenge') or payload.get('geogr. länge'))
-            height = self._convert_value(payload.get('stationshoehe') or payload.get('stationshoehe m ue. nn') or payload.get('stationshoehe nn'))
-            rows.append(
-                {
-                    'station_id': station_id,
-                    'station_name': payload.get('stationsname') or payload.get('station_name') or None,
-                    'state': payload.get('bundesland') or None,
-                    'latitude': latitude,
-                    'longitude': longitude,
-                    'height': height,
-                    'operating_from': operating_from,
-                    'operating_to': operating_to,
-                    'raw': payload,
+        header_line = lines[0].lstrip('\ufeff')
+        if ';' in header_line:
+            reader = csv.reader(io.StringIO('\n'.join(lines)), delimiter=';')
+            headers: Optional[List[str]] = None
+            rows: List[Dict[str, Optional[str]]] = []
+            for raw_row in reader:
+                if not raw_row:
+                    continue
+                if headers is None:
+                    headers = [column.strip().lower().lstrip('\ufeff') for column in raw_row]
+                    self.logger.info('Station header columns detected: %s', headers)
+                    continue
+                payload = {
+                    headers[index]: raw_row[index].strip().lstrip('\ufeff')
+                    for index in range(min(len(headers), len(raw_row)))
                 }
-            )
+                record = self._build_station_record(payload, context='station row (; delimited)')
+                if record:
+                    rows.append(record)
+            return rows
+
+        # whitespace-delimited fallback
+        rows: List[Dict[str, Optional[str]]] = []
+        data_lines = lines[1:] if header_line.lower().startswith('stations') else lines
+        self.logger.info('Station header columns detected (whitespace format): %s', header_line.split())
+        for line in data_lines:
+            record = self._parse_station_line_whitespace(line)
+            if not record:
+                continue
+            built = self._build_station_record(record, context='station row (whitespace)')
+            if built:
+                rows.append(built)
         return rows
 
-    def _fetch_existing_station_ids(self, conn, station_ids: Sequence[str]) -> set:
+    def _build_station_record(self, payload: Dict[str, str], context: str) -> Optional[Dict[str, Optional[str]]]:
+        station_id_raw = payload.get('stations_id') or payload.get('stationsid') or payload.get('stations-id')
+        station_id = self._normalize_station_id(station_id_raw, context=context)
+        if station_id is None:
+            return None
+        from_date = self._normalize_date(payload.get('von_datum'))
+        to_date = self._normalize_date(payload.get('bis_datum'))
+        latitude = self._convert_value(
+            payload.get('geobreite') or payload.get('geo breite') or payload.get('geogr. breite') or payload.get('geobreite(grad)')
+        )
+        longitude = self._convert_value(
+            payload.get('geolaenge') or payload.get('geo laenge') or payload.get('geogr. länge') or payload.get('geolaenge(grad)')
+        )
+        height = self._convert_value(
+            payload.get('stationshoehe') or payload.get('stationshoehe m ue. nn') or payload.get('stationshoehe nn')
+        )
+        return {
+            'station_id': station_id,
+            'station_name': payload.get('stationsname') or payload.get('station_name') or None,
+            'state': payload.get('bundesland') or None,
+            'latitude': latitude,
+            'longitude': longitude,
+            'height': height,
+            'from_date': from_date,
+            'to_date': to_date,
+        }
+
+    def _parse_station_line_whitespace(self, line: str) -> Optional[Dict[str, str]]:
+        stripped = line.strip()
+        if not stripped:
+            return None
+        parts = stripped.split()
+        if len(parts) < 7:
+            return None
+        station_id, von_datum, bis_datum, hoehe, lat, lon, *rest = parts
+        abgabe = rest[-1] if rest else ''
+        rest = rest[:-1] if rest else []
+        bundesland = None
+        station_parts = rest
+        for i in range(len(rest), 0, -1):
+            candidate = ' '.join(rest[i - 1:])
+            if candidate in GERMAN_STATE_NAMES:
+                bundesland = candidate
+                station_parts = rest[:i - 1]
+                break
+        station_name = ' '.join(station_parts).strip()
+        return {
+            'stations_id': station_id,
+            'von_datum': von_datum,
+            'bis_datum': bis_datum,
+            'stationshoehe': hoehe,
+            'geobreite': lat,
+            'geolaenge': lon,
+            'stationsname': station_name or None,
+            'bundesland': bundesland,
+            'abgabe': abgabe,
+        }
+
+    def _fetch_existing_station_ids(self, conn, station_ids: Sequence[int]) -> set:
         if not station_ids:
             return set()
         placeholders = ','.join('?' for _ in station_ids)
@@ -381,7 +452,7 @@ class DwdKlImporter:
             f'SELECT station_id FROM stations WHERE station_id IN ({placeholders})',
             tuple(station_ids),
         ).fetchall()
-        return {row['station_id'] for row in rows}
+        return {int(row['station_id']) for row in rows}
 
     # --- daily data import ------------------------------------------------------------
 
@@ -574,7 +645,7 @@ class DwdKlImporter:
         updated = len(existing)
         return inserted, updated
 
-    def _fetch_existing_daily_pairs(self, conn, pairs: Sequence[Tuple[str, str]]) -> set:
+    def _fetch_existing_daily_pairs(self, conn, pairs: Sequence[Tuple[int, str]]) -> set:
         if not pairs:
             return set()
         placeholders = ','.join(['(?, ?)'] * len(pairs))
@@ -583,12 +654,13 @@ class DwdKlImporter:
             f'SELECT station_id, date FROM daily_kl WHERE (station_id, date) IN ({placeholders})',
             tuple(flattened),
         ).fetchall()
-        return {(row['station_id'], row['date']) for row in rows}
+        return {(int(row['station_id']), row['date']) for row in rows}
 
     def _normalize_daily_record(self, payload: Dict[str, str], filename: str) -> Optional[Dict[str, Optional[str]]]:
-        station_id = payload.get('stations_id')
+        station_id_raw = payload.get('stations_id')
         date_raw = payload.get('mess_datum')
-        if not station_id or not date_raw:
+        station_id = self._normalize_station_id(station_id_raw, context=f'daily record from {filename}')
+        if station_id is None or not date_raw:
             return None
         normalized: Dict[str, Optional[str]] = {
             'station_id': station_id,
@@ -663,6 +735,21 @@ class DwdKlImporter:
             except ValueError:
                 return None
         return value or None
+
+    def _normalize_station_id(self, value: Optional[str], *, context: str = '') -> Optional[int]:
+        if value is None:
+            return None
+        text = str(value).strip().lstrip('\ufeff')
+        if not text:
+            return None
+        if not text.isdigit():
+            self.logger.warning('Non-numeric station_id %r encountered in %s', value, context or 'record')
+            return None
+        station_id = int(text)
+        if station_id <= 0:
+            self.logger.warning('Out-of-range station_id %r encountered in %s', value, context or 'record')
+            return None
+        return station_id
 
     def _normalize_date(self, value: Optional[str]) -> Optional[str]:
         if not value:

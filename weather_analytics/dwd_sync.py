@@ -11,8 +11,10 @@ import zipfile
 from typing import Any, Dict, Iterable, List, Optional
 from urllib.parse import urljoin
 
-import requests
 import csv
+import requests
+
+LOGGER = logging.getLogger(__name__)
 
 from .db import execute_script, get_db
 
@@ -22,9 +24,11 @@ LISTING_DATE_PATTERN = re.compile(r'(\d{2}-[A-Za-z]{3}-\d{4}\s+\d{2}:\d{2})')
 LISTING_DATE_FORMAT = '%d-%b-%Y %H:%M'
 
 SCHEMA_STATEMENTS = (
+    "DROP TABLE IF EXISTS weather_daily;",
+    "DROP TABLE IF EXISTS stations;",
     """
-    CREATE TABLE IF NOT EXISTS stations (
-        station_id TEXT PRIMARY KEY,
+    CREATE TABLE stations (
+        station_id INTEGER PRIMARY KEY,
         from_date TEXT,
         to_date TEXT,
         station_name TEXT,
@@ -32,13 +36,12 @@ SCHEMA_STATEMENTS = (
         latitude REAL,
         longitude REAL,
         height REAL,
-        raw_data TEXT,
         updated_at TEXT NOT NULL
     )
     """,
     """
-    CREATE TABLE IF NOT EXISTS weather_daily (
-        station_id TEXT NOT NULL,
+    CREATE TABLE weather_daily (
+        station_id INTEGER NOT NULL,
         date TEXT NOT NULL,
         data TEXT NOT NULL,
         source_file TEXT NOT NULL,
@@ -218,12 +221,13 @@ def import_station_data(stations_raw: str) -> int:
 
     rows_to_insert: List[tuple] = []
     for data in records:
-        station_id = data.get('Stations_id') or data.get('STATIONS_ID')
-        if not station_id:
+        station_id_raw = data.get('Stations_id') or data.get('STATIONS_ID')
+        station_id = normalize_station_id(station_id_raw, context='station description')
+        if station_id is None:
             continue
         rows_to_insert.append(
             (
-                station_id.strip(),
+                station_id,
                 normalize_date(data.get('von_datum') or data.get('VON_DATUM')),
                 normalize_date(data.get('bis_datum') or data.get('BIS_DATUM')),
                 (data.get('Stationsname') or data.get('STATION_NAME') or '').strip() or None,
@@ -231,7 +235,6 @@ def import_station_data(stations_raw: str) -> int:
                 parse_float(data.get('geogr. Breite') or data.get('geoBreite') or data.get('Latitude')),
                 parse_float(data.get('geogr. Länge') or data.get('geoLaenge') or data.get('Longitude')),
                 parse_float(data.get('Stationshoehe') or data.get('Stationshoehe m ue. NN') or data.get('Stationshoehe NN')),
-                json.dumps(data, ensure_ascii=False),
                 now_iso,
             )
         )
@@ -244,8 +247,8 @@ def import_station_data(stations_raw: str) -> int:
             """
             INSERT INTO stations (
                 station_id, from_date, to_date, station_name, state,
-                latitude, longitude, height, raw_data, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                latitude, longitude, height, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(station_id) DO UPDATE SET
                 from_date = excluded.from_date,
                 to_date = excluded.to_date,
@@ -254,7 +257,6 @@ def import_station_data(stations_raw: str) -> int:
                 latitude = excluded.latitude,
                 longitude = excluded.longitude,
                 height = excluded.height,
-                raw_data = excluded.raw_data,
                 updated_at = excluded.updated_at
             """,
             rows_to_insert
@@ -278,9 +280,9 @@ def parse_station_records(stations_raw: str) -> Iterable[Dict[str, str]]:
             if not row:
                 continue
             if headers is None:
-                headers = [col.strip() for col in row]
+                headers = [col.strip().lstrip('\ufeff') for col in row]
                 continue
-            yield {headers[i]: row[i].strip() for i in range(len(headers))}
+            yield {headers[i]: row[i].strip().lstrip('\ufeff') for i in range(len(headers))}
         return
 
     # Fallback: whitespace delimited format
@@ -340,17 +342,18 @@ def import_weather_archive(archive_bytes: bytes, source_filename: str) -> None:
                 if not row or row[0].startswith('#'):
                     continue
                 if headers is None:
-                    headers = [col.strip() for col in row]
-                    continue
-                data = {headers[i]: row[i].strip() for i in range(len(headers))}
-                station_id = data.get('STATIONS_ID')
-                date_raw = data.get('MESS_DATUM')
-                if not station_id or not date_raw:
-                    continue
-                batch.append(
-                    (
-                        station_id,
-                        normalize_date(date_raw),
+                headers = [col.strip() for col in row]
+                continue
+            data = {headers[i]: row[i].strip() for i in range(len(headers))}
+            station_id_raw = data.get('STATIONS_ID')
+            date_raw = data.get('MESS_DATUM')
+            station_id = normalize_station_id(station_id_raw, context=f'weather row {source_filename}')
+            if station_id is None or not date_raw:
+                continue
+            batch.append(
+                (
+                    station_id,
+                    normalize_date(date_raw),
                         json.dumps(normalize_weather_payload(data), ensure_ascii=False),
                         source_filename,
                         now_iso,
@@ -417,6 +420,22 @@ def normalize_weather_payload(payload: Dict[str, str]) -> Dict[str, Optional[str
         else:
             normalized[key] = value
     return normalized
+
+
+def normalize_station_id(value: Optional[str], *, context: str = '') -> Optional[int]:
+    if value is None:
+        return None
+    text = str(value).strip().lstrip('\ufeff')
+    if not text:
+        return None
+    if not text.isdigit():
+        LOGGER.warning('Skipping %s due to non-numeric station_id=%r', context or 'record', value)
+        return None
+    station_id = int(text)
+    if station_id <= 0:
+        LOGGER.warning('Skipping %s due to invalid station_id=%r', context or 'record', value)
+        return None
+    return station_id
 GERMAN_STATE_NAMES = {
     'Baden-Württemberg',
     'Bayern',
