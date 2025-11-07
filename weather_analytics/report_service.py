@@ -183,3 +183,26 @@ def generate_report(conn, lat: float, lon: float, radius: float,
         'periods': periods,
         'granularity': granularity,
     }
+
+
+def temp_durchschnitt_auswertung(conn, lat: float, lon: float,
+                                 start_date: str, end_date: str,
+                                 radius: float) -> float:
+    """Return the mean temperature within a radius for the given date range."""
+    stations = _stations_within_radius(conn, lat, lon, radius)
+    if not stations:
+        return 0.0
+
+    placeholders = ','.join('?' for _ in stations)
+    query = f'''
+        SELECT AVG(tmk) AS avg_temp
+        FROM daily_kl
+        WHERE station_id IN ({placeholders})
+          AND date BETWEEN ? AND ?
+          AND tmk IS NOT NULL
+    '''
+    params = [*(station['station_id'] for station in stations), start_date, end_date]
+    row = conn.execute(query, params).fetchone()
+    if not row or row['avg_temp'] is None:
+        return 0.0
+    return float(row['avg_temp'])
