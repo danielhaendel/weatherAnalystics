@@ -95,7 +95,6 @@ const REGION_STATION_UNKNOWN = TEXT.regionStationUnknown || '--';
 const REGION_TITLE_DEFAULT = regionTitleEl?.dataset?.default || REGION_EMPTY_TEXT;
 const REGION_META_DEFAULT = regionMetaEl?.dataset?.default || REGION_DEFAULT_TEXT;
 const REGION_STATION_DEFAULT = regionStationNameEl?.dataset?.default || REGION_STATION_UNKNOWN;
-const coverageInfo = window.APP_COVERAGE || null;
 
 let regionLookupSeq = 0;
 let coordErrorToastClose = null;
@@ -420,16 +419,9 @@ function initDatePickers() {
     const endInput = document.getElementById('end_date');
     if (!startInput || !endInput) return;
 
-    const minDateStr = coverageInfo?.min_date || null;
-    const maxDateStr = coverageInfo?.max_date || null;
-
     if (typeof flatpickr === 'undefined') {
         startInput.type = 'date';
-        if (minDateStr) startInput.min = minDateStr;
-        if (maxDateStr) startInput.max = maxDateStr;
         endInput.type = 'date';
-        if (minDateStr) endInput.min = minDateStr;
-        if (maxDateStr) endInput.max = maxDateStr;
         return;
     }
 
@@ -443,15 +435,13 @@ function initDatePickers() {
         allowInput: true,
         disableMobile: true,
         locale: resolvedLocale,
-        minDate: minDateStr,
-        maxDate: maxDateStr,
     };
 
     startPicker = flatpickr(startInput, {
         ...sharedConfig,
         onChange: (selectedDates, dateStr) => {
             if (endPicker) {
-                endPicker.set('minDate', dateStr || minDateStr || null);
+                endPicker.set('minDate', dateStr || null);
                 if (selectedDates.length && endPicker.selectedDates.length && endPicker.selectedDates[0] < selectedDates[0]) {
                     endPicker.clear();
                 }
@@ -466,7 +456,7 @@ function initDatePickers() {
         ...sharedConfig,
         onChange: (selectedDates, dateStr) => {
             if (startPicker) {
-                const newMax = dateStr || maxDateStr || null;
+                const newMax = dateStr || null;
                 startPicker.set('maxDate', newMax);
                 if (selectedDates.length) {
                     const selectedEnd = selectedDates[0];
@@ -490,22 +480,6 @@ function initDatePickers() {
     if (endPicker && endInput.value) {
         endPicker.setDate(endInput.value, false);
         startPicker.set('maxDate', endInput.value);
-    }
-
-    if (coverageInfo && maxDateStr) {
-        const endDateObj = new Date(`${maxDateStr}T00:00:00`);
-        const startDateObj = new Date(endDateObj.getTime());
-        startDateObj.setDate(startDateObj.getDate() - 30);
-        const isoStart = startDateObj.toISOString().slice(0, 10);
-        const clampedStart = minDateStr && isoStart < minDateStr ? minDateStr : isoStart;
-        if (startPicker) {
-            startPicker.setDate(clampedStart, false);
-            startPicker.set('maxDate', maxDateStr);
-        }
-        if (endPicker) {
-            endPicker.setDate(maxDateStr, false);
-            endPicker.set('minDate', clampedStart);
-        }
     }
 
     const linkedInputs = [];
@@ -621,11 +595,6 @@ function validateForm(options = {}) {
     if (datesValid) {
         if (startVal > endVal) {
             datesValid = false;
-        }
-        if (coverageInfo) {
-            if (startVal < coverageInfo.min_date || endVal > coverageInfo.max_date) {
-                datesValid = false;
-            }
         }
     }
 

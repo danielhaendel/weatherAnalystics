@@ -113,8 +113,6 @@ def create_app() -> Flask:
     def index():
         """Render index page with localized content."""
         resolved_lang, ui_strings, js_strings, current_option = _build_page_context()
-        conn = get_db()
-        coverage = get_report_coverage(conn)
 
         response = make_response(
             render_template(
@@ -125,7 +123,6 @@ def create_app() -> Flask:
                 languages=language_options,
                 current_language=resolved_lang,
                 current_language_option=current_option,
-                coverage=coverage,
             )
         )
 
