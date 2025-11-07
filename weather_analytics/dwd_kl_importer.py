@@ -20,7 +20,8 @@ import requests
 from requests import Response, Session
 from requests.adapters import HTTPAdapter, Retry
 
-from .db import execute_script, get_db
+from .db import get_db
+from .schema import ensure_weather_schema
 
 
 BASE_URL = 'https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/daily/kl/historical/'
@@ -70,54 +71,6 @@ DAILY_COLUMN_TYPES: Dict[str, str] = {
     'tgk': 'float',
     'eor': 'text',
 }
-
-SCHEMA_STATEMENTS = (
-    "DROP TABLE IF EXISTS daily_kl;",
-    "DROP TABLE IF EXISTS stations;",
-    """
-    CREATE TABLE stations (
-        station_id INTEGER PRIMARY KEY,
-        station_name TEXT,
-        state TEXT,
-        latitude REAL,
-        longitude REAL,
-        height REAL,
-        from_date TEXT,
-        to_date TEXT,
-        updated_at TEXT NOT NULL
-    )
-    """,
-    """
-    CREATE TABLE daily_kl (
-        station_id INTEGER NOT NULL,
-        date TEXT NOT NULL,
-        qn_3 INTEGER,
-        fx REAL,
-        fm REAL,
-        qn_4 INTEGER,
-        rsk REAL,
-        rskf REAL,
-        sdk REAL,
-        shk_tag REAL,
-        nm REAL,
-        vpm REAL,
-        pm REAL,
-        tmk REAL,
-        upm REAL,
-        txk REAL,
-        tnk REAL,
-        tgk REAL,
-        eor TEXT,
-        source_filename TEXT,
-        updated_at TEXT NOT NULL,
-        PRIMARY KEY (station_id, date)
-    )
-    """,
-    """
-    CREATE INDEX IF NOT EXISTS idx_daily_kl_station_date
-    ON daily_kl (station_id, date)
-    """,
-)
 
 
 @dataclass
@@ -242,27 +195,7 @@ class DwdKlImporter:
         return current_app.app_context()
 
     def _ensure_schema(self) -> None:
-        execute_script(SCHEMA_STATEMENTS)
-        conn = self._get_connection()
-        self._ensure_station_columns(conn)
-
-    def _ensure_station_columns(self, conn) -> None:
-        required_columns = {
-            'station_name': 'TEXT',
-            'state': 'TEXT',
-            'latitude': 'REAL',
-            'longitude': 'REAL',
-            'height': 'REAL',
-            'from_date': 'TEXT',
-            'to_date': 'TEXT',
-            'updated_at': 'TEXT',
-        }
-        existing_columns = {row['name'] for row in conn.execute('PRAGMA table_info(stations)')}
-        missing = [(column, column_type) for column, column_type in required_columns.items() if column not in existing_columns]
-        for column, column_type in missing:
-            conn.execute(f'ALTER TABLE stations ADD COLUMN {column} {column_type}')
-        if missing:
-            conn.commit()
+        ensure_weather_schema(reset=True)
 
     # --- station import --------------------------------------------------------------
 

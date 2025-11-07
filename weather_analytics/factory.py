@@ -13,6 +13,7 @@ from .api import api_bp
 from .auth import auth_bp, init_auth
 from .db import ensure_database, get_db, init_app as init_db_app
 from .report_service import ReportError, generate_report, get_coverage as get_report_coverage
+from .schema import ensure_weather_schema
 
 PACKAGE_ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = PACKAGE_ROOT.parent
@@ -76,6 +77,8 @@ def create_app() -> Flask:
     configure_logging(app)
     init_db_app(app)
     ensure_database(app)
+    with app.app_context():
+        ensure_weather_schema()
     init_auth(app)
     app.register_blueprint(auth_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
