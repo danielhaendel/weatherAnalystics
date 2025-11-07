@@ -51,6 +51,15 @@
     "report_table_placeholder": "Aucune donnée pour le moment.",
     "report_stations_heading": "Stations météo utilisées",
     "report_station_distance": "Distance : {distance} km",
+    "temp_table_heading": "Mesures de température",
+    "temp_table_description": "Mesures contenues dans ton rayon et ta période selon l'algorithme du cercle de capture.",
+    "temp_table_average_label": "Température moyenne",
+    "temp_table_limit_hint": "Affichage des {count} premières mesures",
+    "temp_table_date": "Date",
+    "temp_table_station": "Station",
+    "temp_table_distance": "Distance",
+    "temp_table_temperature": "Température (°C)",
+    "temp_table_empty": "Aucune mesure de température pour la période sélectionnée.",
     "reports_link": "Analyses"
   },
   "js": {

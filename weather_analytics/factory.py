@@ -12,7 +12,13 @@ from flask import Flask, make_response, render_template, request
 from .api import api_bp
 from .auth import auth_bp, init_auth
 from .db import ensure_database, get_db, init_app as init_db_app
-from .report_service import ReportError, generate_report, get_coverage as get_report_coverage
+from .report_service import (
+    ReportError,
+    generate_report,
+    get_coverage as get_report_coverage,
+    temp_durchschnitt_auswertung,
+    temperature_samples,
+)
 from .schema import ensure_weather_schema
 
 PACKAGE_ROOT = Path(__file__).resolve().parent
@@ -129,6 +135,8 @@ def create_app() -> Flask:
         return response
 
 
+    TEMPERATURE_SAMPLE_LIMIT = 500
+
     @app.get('/reports')
     def reports():
         """Render aggregated weather report."""
@@ -138,6 +146,8 @@ def create_app() -> Flask:
 
         report = None
         chart_data = None
+        temperature_average = None
+        temp_samples = []
         error_message = ui_strings.get('report_table_placeholder', 'Bitte starte die Auswertung auf der Hauptseite.')
 
         required = {'lat', 'lon', 'radius', 'start_date', 'end_date', 'granularity'}
@@ -152,6 +162,8 @@ def create_app() -> Flask:
                 report = generate_report(conn, lat, lon, radius, start_date, end_date, granularity)
                 report['period_count'] = len(report['periods'])
                 report['station_count'] = len(report['stations'])
+                temperature_average = temp_durchschnitt_auswertung(conn, lat, lon, start_date, end_date, radius)
+                temp_samples = temperature_samples(conn, lat, lon, start_date, end_date, radius, TEMPERATURE_SAMPLE_LIMIT)
                 chart_data = {
                     'labels': [row['period'] for row in report['periods']],
                     'tempAvg': [row['temp_avg'] for row in report['periods']],
@@ -189,6 +201,9 @@ def create_app() -> Flask:
                 report=report,
                 chart_data=chart_data,
                 error_message=error_message,
+                temperature_average=temperature_average,
+                temperature_samples=temp_samples,
+                temperature_sample_limit=TEMPERATURE_SAMPLE_LIMIT,
             )
         )
         if request.args.get('lang', type=str) in SUPPORTED_LANGUAGES:

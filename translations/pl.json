@@ -51,6 +51,15 @@
     "report_table_placeholder": "Brak danych.",
     "report_stations_heading": "Wykorzystane stacje pogodowe",
     "report_station_distance": "Odległość: {distance} km",
+    "temp_table_heading": "Pomiary temperatury",
+    "temp_table_description": "Pomiary znajdujące się w wybranym promieniu i okresie według algorytmu okręgu wyszukiwania.",
+    "temp_table_average_label": "Średnia temperatura",
+    "temp_table_limit_hint": "Wyświetlam pierwsze {count} pomiarów",
+    "temp_table_date": "Data",
+    "temp_table_station": "Stacja",
+    "temp_table_distance": "Dystans",
+    "temp_table_temperature": "Temperatura (°C)",
+    "temp_table_empty": "Brak pomiarów temperatury dla wskazanego okresu.",
     "reports_link": "Raporty"
   },
   "js": {

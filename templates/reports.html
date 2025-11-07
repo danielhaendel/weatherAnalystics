@@ -25,7 +25,8 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+          rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
@@ -52,11 +53,13 @@
                 <section class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <div class="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
                         <p class="text-xs uppercase tracking-wide text-slate-500">{{ ui['report_table_period'] }}</p>
-                        <p class="mt-2 text-lg font-semibold text-white">{{ report.params.start_date }} → {{ report.params.end_date }}</p>
+                        <p class="mt-2 text-lg font-semibold text-white">{{ report.params.start_date }}
+                            → {{ report.params.end_date }}</p>
                     </div>
                     <div class="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
                         <p class="text-xs uppercase tracking-wide text-slate-500">{{ ui['radius_label'] }}</p>
-                        <p class="mt-2 text-lg font-semibold text-white">{{ '%.0f'|format(report.params.radius) }} km</p>
+                        <p class="mt-2 text-lg font-semibold text-white">{{ '%.0f'|format(report.params.radius) }}
+                            km</p>
                     </div>
                     <div class="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
                         <p class="text-xs uppercase tracking-wide text-slate-500">{{ ui['granularity_label'] }}</p>
@@ -72,8 +75,19 @@
                     </div>
                     <div class="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
                         <p class="text-xs uppercase tracking-wide text-slate-500">{{ ui['report_stations_heading'] }}</p>
-                        <p class="mt-2 text-lg font-semibold text-white">{{ report.period_count }} × {{ report.station_count }}</p>
-                        <p class="text-xs text-slate-500">{{ ui['report_table_period'] }} · {{ ui['report_stations_heading'] }}</p>
+                        <p class="mt-2 text-lg font-semibold text-white">{{ report.period_count }}
+                            × {{ report.station_count }}</p>
+                        <p class="text-xs text-slate-500">{{ ui['report_table_period'] }}
+                            · {{ ui['report_stations_heading'] }}</p>
+                    </div>
+                </section>
+
+                <section class="rounded-3xl border border-white/10 bg-slate-900/60 p-6">
+                    <div class="flex items-center justify-between gap-3">
+                        <h2 class="text-lg font-semibold text-white">{{ ui['report_chart_title'] }}</h2>
+                    </div>
+                    <div class="mt-4 h-[320px] md:h-[380px]">
+                        <canvas id="report_chart" class="h-full w-full"></canvas>
                     </div>
                 </section>
 
@@ -110,12 +124,70 @@
                 </section>
 
                 <section class="rounded-3xl border border-white/10 bg-slate-900/60 p-6">
-                    <div class="flex items-center justify-between gap-3">
-                        <h2 class="text-lg font-semibold text-white">{{ ui['report_chart_title'] }}</h2>
+                    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <h2 class="text-lg font-semibold text-white">{{ ui['temp_table_heading'] }}</h2>
+                            <p class="text-sm text-slate-400">{{ ui['temp_table_description'] }}</p>
+                        </div>
+                        <div class="text-left md:text-right">
+                            <p class="text-xs uppercase tracking-wide text-slate-500">{{ ui['temp_table_average_label'] }}</p>
+                            <p class="mt-2 text-3xl font-semibold text-white">
+                                {% if temperature_average is not none %}
+                                    {{ '%.2f'|format(temperature_average) }} °C
+                                {% else %}
+                                    --
+                                {% endif %}
+                            </p>
+                        </div>
                     </div>
-                    <div class="mt-4 h-[320px] md:h-[380px]">
-                        <canvas id="report_chart" class="h-full w-full"></canvas>
-                    </div>
+
+                    {% if temperature_samples %}
+                        <p class="mt-4 text-xs uppercase tracking-wide text-slate-500">
+                            {{ ui['temp_table_limit_hint'].replace('{count}', temperature_sample_limit|string) }}
+                        </p>
+                        <div class="mt-3 overflow-x-auto">
+                            <table class="w-full min-w-[640px] text-left text-sm text-slate-100">
+                                <thead>
+                                <tr class="text-xs uppercase text-slate-400">
+                                    <th class="py-2 pr-4 font-semibold">{{ ui['temp_table_date'] }}</th>
+                                    <th class="py-2 pr-4 font-semibold">{{ ui['temp_table_station'] }}</th>
+                                    <th class="py-2 pr-4 font-semibold">{{ ui['temp_table_distance'] }}</th>
+                                    <th class="py-2 pr-4 font-semibold text-right">{{ ui['temp_table_temperature'] }}</th>
+                                </tr>
+                                </thead>
+                                <tbody class="divide-y divide-white/5">
+                                {% for sample in temperature_samples %}
+                                    <tr class="align-top">
+                                        <td class="py-3 pr-4 text-slate-200">{{ sample.date }}</td>
+                                        <td class="py-3 pr-4">
+                                            <div class="font-semibold text-white">{{ sample.station_name or ui['region_station_unknown'] }}</div>
+                                            <div class="text-xs text-slate-400">
+                                                ID {{ sample.station_id }}
+                                                {% if sample.state %}· {{ sample.state }}{% endif %}
+                                            </div>
+                                        </td>
+                                        <td class="py-3 pr-4">
+                                            {% if sample.distance_km is not none %}
+                                                {{ '%.2f'|format(sample.distance_km) }} km
+                                            {% else %}
+                                                –
+                                            {% endif %}
+                                        </td>
+                                        <td class="py-3 pl-4 text-right font-semibold text-white">
+                                            {% if sample.temperature is not none %}
+                                                {{ '%.2f'|format(sample.temperature) }} °C
+                                            {% else %}
+                                                –
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="mt-4 text-sm text-slate-400">{{ ui['temp_table_empty'] }}</p>
+                    {% endif %}
                 </section>
 
                 <section class="rounded-3xl border border-white/10 bg-slate-900/60 p-6">
@@ -126,14 +198,16 @@
                                 {{ station.name or station.station_id }}
                                 {% if station.state %} · {{ station.state }}{% endif %}
                                 {% if station.distance_km is not none %}
-                                    · {{ ui['report_station_distance'].replace('{distance}', ('%.2f'|format(station.distance_km))) }}
+                                    ·
+                                    {{ ui['report_station_distance'].replace('{distance}', ('%.2f'|format(station.distance_km))) }}
                                 {% endif %}
                             </li>
                         {% endfor %}
                     </ul>
                 </section>
             {% else %}
-                <section class="rounded-3xl border border-white/10 bg-slate-900/60 p-8 text-center text-sm text-slate-200">
+                <section
+                        class="rounded-3xl border border-white/10 bg-slate-900/60 p-8 text-center text-sm text-slate-200">
                     <p>{{ error_message }}</p>
                     <a href="{{ url_for('index') }}"
                        class="mt-4 inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 transition hover:border-lime-400 hover:text-white">
@@ -160,67 +234,67 @@
 </footer>
 
 {% if report %}
-<script>
-    const REPORT_CHART_DATA = {{ chart_data|tojson }};
-    document.addEventListener('DOMContentLoaded', () => {
-        if (!REPORT_CHART_DATA) return;
-        const ctx = document.getElementById('report_chart');
-        if (!ctx) return;
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: REPORT_CHART_DATA.labels,
-                datasets: [
-                    {
-                        type: 'line',
-                        label: REPORT_CHART_DATA.labelsTemp,
-                        data: REPORT_CHART_DATA.tempAvg,
-                        borderColor: '#38bdf8',
-                        backgroundColor: 'rgba(56, 189, 248, 0.25)',
-                        tension: 0.2,
-                        yAxisID: 'y',
-                    },
-                    {
-                        label: REPORT_CHART_DATA.labelsPrecip,
-                        data: REPORT_CHART_DATA.precipitation,
-                        backgroundColor: 'rgba(165, 243, 252, 0.45)',
-                        borderColor: 'rgba(165, 243, 252, 0.7)',
-                        yAxisID: 'y1',
-                    },
-                    {
-                        label: REPORT_CHART_DATA.labelsSunshine,
-                        data: REPORT_CHART_DATA.sunshine,
-                        backgroundColor: 'rgba(190, 242, 100, 0.35)',
-                        borderColor: 'rgba(190, 242, 100, 0.7)',
-                        yAxisID: 'y1',
-                    },
-                ],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                scales: {
-                    y: {
-                        position: 'left',
-                        ticks: { color: '#bae6fd' },
-                        grid: { color: 'rgba(148, 163, 184, 0.15)' },
-                    },
-                    y1: {
-                        position: 'right',
-                        ticks: { color: '#bbf7d0' },
-                        grid: { drawOnChartArea: false },
-                    },
-                    x: {
-                        ticks: { color: '#cbd5f5' },
-                        grid: { color: 'rgba(148, 163, 184, 0.1)' },
-                    },
+    <script>
+        const REPORT_CHART_DATA = {{ chart_data|tojson }};
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!REPORT_CHART_DATA) return;
+            const ctx = document.getElementById('report_chart');
+            if (!ctx) return;
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: REPORT_CHART_DATA.labels,
+                    datasets: [
+                        {
+                            type: 'line',
+                            label: REPORT_CHART_DATA.labelsTemp,
+                            data: REPORT_CHART_DATA.tempAvg,
+                            borderColor: '#38bdf8',
+                            backgroundColor: 'rgba(56, 189, 248, 0.25)',
+                            tension: 0.2,
+                            yAxisID: 'y',
+                        },
+                        {
+                            label: REPORT_CHART_DATA.labelsPrecip,
+                            data: REPORT_CHART_DATA.precipitation,
+                            backgroundColor: 'rgba(165, 243, 252, 0.45)',
+                            borderColor: 'rgba(165, 243, 252, 0.7)',
+                            yAxisID: 'y1',
+                        },
+                        {
+                            label: REPORT_CHART_DATA.labelsSunshine,
+                            data: REPORT_CHART_DATA.sunshine,
+                            backgroundColor: 'rgba(190, 242, 100, 0.35)',
+                            borderColor: 'rgba(190, 242, 100, 0.7)',
+                            yAxisID: 'y1',
+                        },
+                    ],
                 },
-                plugins: { legend: { labels: { color: '#e2e8f0' } } },
-            },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {mode: 'index', intersect: false},
+                    scales: {
+                        y: {
+                            position: 'left',
+                            ticks: {color: '#bae6fd'},
+                            grid: {color: 'rgba(148, 163, 184, 0.15)'},
+                        },
+                        y1: {
+                            position: 'right',
+                            ticks: {color: '#bbf7d0'},
+                            grid: {drawOnChartArea: false},
+                        },
+                        x: {
+                            ticks: {color: '#cbd5f5'},
+                            grid: {color: 'rgba(148, 163, 184, 0.1)'},
+                        },
+                    },
+                    plugins: {legend: {labels: {color: '#e2e8f0'}}},
+                },
+            });
         });
-    });
-</script>
+    </script>
 {% endif %}
 </body>
 </html>
