@@ -19,10 +19,6 @@ const DEFAULT_JS_TEXT = {
   themeToggleDarkText: 'Dark',
   themeToggleLightText: 'Light',
   loadingOverlayText: 'Preparing weather data ...',
-  datePlaceholder: 'MM/DD/YYYY',
-  flatpickrAltFormat: 'm/d/Y',
-  flatpickrDateFormat: 'Y-m-d',
-  flatpickrLocale: 'en',
   syncStarted: 'Updating station data ...',
   syncSuccess: 'Station data updated.',
   syncUpToDate: 'Station data already up to date.',
@@ -39,6 +35,7 @@ const APP_I18N = window.APP_I18N || {};
 const JS_STRINGS = APP_I18N.js || {};
 const CURRENT_LANG = APP_I18N.lang || JS_STRINGS.lang || 'en';
 const TEXT = { ...DEFAULT_JS_TEXT, ...JS_STRINGS };
+const ANALYSIS_LOADING_KEY = 'analysis_loading_state';
 
 async function postJSON(url, payload) {
     const resp = await fetch(url, {
@@ -53,14 +50,6 @@ async function postJSON(url, payload) {
 function toggleClass(el, className, on) {
     if (!el) return;
     el.classList.toggle(className, on);
-}
-
-function isPastDateStr(iso) {
-    if (!iso) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const d = new Date(`${iso}T00:00:00`);
-    return d < today;
 }
 
 const GERMANY_BOUNDS = {
@@ -81,11 +70,13 @@ const regionStationNameEl = document.getElementById('coord_region_station');
 const regionStationBlockEl = document.getElementById('coord_region_station_block');
 const regionStationDistanceEl = document.getElementById('coord_region_distance');
 const toastContainer = document.getElementById('toast_container');
+const dateRangeInput = document.getElementById('date_range_display');
+const startDateInput = document.getElementById('start_date');
+const endDateInput = document.getElementById('end_date');
+let rangePicker = null;
 
 let activeMarker = null;
 let leafletMap = null;
-let startPicker = null;
-let endPicker = null;
 
 const REGION_LOADING_TEXT = TEXT.regionLoading;
 const REGION_DEFAULT_TEXT = TEXT.regionDefault;
@@ -341,11 +332,6 @@ function markMapUnavailable(message = TEXT.mapUnavailable) {
 }
 
 
-function setDateInvalidState(picker, invalid) {
-    if (!picker || !picker.altInput) return;
-    picker.altInput.classList.toggle('is-invalid', invalid);
-}
-
 function placeMarker(lat, lon) {
     if (!leafletMap) return;
     const coords = [lat, lon];
@@ -414,82 +400,89 @@ function initMap() {
     });
 }
 
-function initDatePickers() {
-    const startInput = document.getElementById('start_date');
-    const endInput = document.getElementById('end_date');
-    if (!startInput || !endInput) return;
+function formatISODate(date) {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+    const offsetMinutes = date.getTimezoneOffset();
+    const adjusted = new Date(date.getTime() - offsetMinutes * 60000);
+    return adjusted.toISOString().slice(0, 10);
+}
 
-    if (typeof flatpickr === 'undefined') {
-        startInput.type = 'date';
-        endInput.type = 'date';
-        return;
+function buildDefaultRange() {
+    const end = new Date();
+    end.setDate(end.getDate() - 1);
+    const start = new Date(end.getTime());
+    start.setDate(start.getDate() - 30);
+    return {
+        start: formatISODate(start),
+        end: formatISODate(end),
+    };
+}
+
+function setDateRangeValues(startValue, endValue, { syncDisplay = true } = {}) {
+    if (startDateInput) startDateInput.value = startValue || '';
+    if (endDateInput) endDateInput.value = endValue || '';
+    if (syncDisplay && dateRangeInput) {
+        dateRangeInput.value = startValue && endValue ? `${startValue} – ${endValue}` : '';
     }
+}
 
-    const resolvedLocale = (!TEXT.flatpickrLocale || TEXT.flatpickrLocale === 'default')
-        ? 'en'
-        : TEXT.flatpickrLocale;
-    const sharedConfig = {
-        altInput: true,
-        altFormat: TEXT.flatpickrAltFormat,
-        dateFormat: TEXT.flatpickrDateFormat,
-        allowInput: true,
-        disableMobile: true,
-        locale: resolvedLocale,
+function initDateRangePicker() {
+    if (!dateRangeInput || !startDateInput || !endDateInput) return;
+
+    const defaults = (startDateInput.value && endDateInput.value)
+        ? { start: startDateInput.value, end: endDateInput.value }
+        : buildDefaultRange();
+    setDateRangeValues(defaults.start, defaults.end);
+
+    const maxSelectable = formatISODate(new Date(Date.now() - 24 * 60 * 60 * 1000));
+
+    const instantiatePicker = () => {
+        if (typeof Litepicker === 'undefined') {
+            console.error('Litepicker is not available.');
+            return null;
+        }
+        const picker = new Litepicker({
+            element: dateRangeInput,
+            singleMode: false,
+            format: 'YYYY-MM-DD',
+            startDate: defaults.start,
+            endDate: defaults.end,
+            numberOfMonths: window.innerWidth >= 640 ? 2 : 1,
+            numberOfColumns: window.innerWidth >= 640 ? 2 : 1,
+            autoApply: true,
+            minDate: '1950-01-01',
+            maxDate: maxSelectable,
+            lang: CURRENT_LANG,
+            dropdowns: {
+                minYear: 1950,
+                maxYear: new Date().getFullYear(),
+                months: true,
+                years: true,
+            },
+        });
+
+        picker.on('selected', (date1, date2) => {
+            const start = date1 ? date1.format('YYYY-MM-DD') : '';
+            const end = date2 ? date2.format('YYYY-MM-DD') : '';
+            setDateRangeValues(start, end);
+            validateForm({ suppressCoordinateToast: true });
+        });
+
+        return picker;
     };
 
-    startPicker = flatpickr(startInput, {
-        ...sharedConfig,
-        onChange: (selectedDates, dateStr) => {
-            if (endPicker) {
-                endPicker.set('minDate', dateStr || null);
-                if (selectedDates.length && endPicker.selectedDates.length && endPicker.selectedDates[0] < selectedDates[0]) {
-                    endPicker.clear();
-                }
+    if (typeof Litepicker === 'undefined') {
+        const onFocus = () => {
+            rangePicker = instantiatePicker();
+            if (rangePicker) {
+                rangePicker.show();
             }
-            validateForm({ suppressCoordinateToast: true });
-        },
-        onClose: () => validateForm({ suppressCoordinateToast: true }),
-        onValueUpdate: () => validateForm({ suppressCoordinateToast: true }),
-    });
-
-    endPicker = flatpickr(endInput, {
-        ...sharedConfig,
-        onChange: (selectedDates, dateStr) => {
-            if (startPicker) {
-                const newMax = dateStr || null;
-                startPicker.set('maxDate', newMax);
-                if (selectedDates.length) {
-                    const selectedEnd = selectedDates[0];
-                    const currentStart = startPicker.selectedDates[0];
-                    if (!currentStart || currentStart > selectedEnd) {
-                        startPicker.setDate(selectedEnd, false);
-                    }
-                }
-            }
-            validateForm({ suppressCoordinateToast: true });
-        },
-        onClose: () => validateForm({ suppressCoordinateToast: true }),
-        onValueUpdate: () => validateForm({ suppressCoordinateToast: true }),
-    });
-
-    if (startPicker && startInput.value) {
-        startPicker.setDate(startInput.value, false);
-        endPicker.set('minDate', startInput.value);
+            dateRangeInput.removeEventListener('focus', onFocus);
+        };
+        dateRangeInput.addEventListener('focus', onFocus);
+    } else {
+        rangePicker = instantiatePicker();
     }
-
-    if (endPicker && endInput.value) {
-        endPicker.setDate(endInput.value, false);
-        startPicker.set('maxDate', endInput.value);
-    }
-
-    const linkedInputs = [];
-    if (startPicker && startPicker.altInput) linkedInputs.push(startPicker.altInput);
-    if (endPicker && endPicker.altInput) linkedInputs.push(endPicker.altInput);
-    linkedInputs.forEach((input) => {
-        input.setAttribute('autocomplete', 'off');
-        input.setAttribute('placeholder', TEXT.datePlaceholder);
-        input.classList.add('date-field');
-    });
 
     validateForm({ suppressCoordinateToast: true });
 }
@@ -587,27 +580,36 @@ function validateForm(options = {}) {
     const end = document.getElementById('end_date');
     const startErr = document.getElementById('start_error');
     const endErr = document.getElementById('end_error');
+    const dateRangeDisplay = document.getElementById('date_range_display');
 
-    const startVal = start.value || '';
-    const endVal = end.value || '';
+    if (start && end && startErr && endErr && dateRangeDisplay) {
+        const startVal = start.value || '';
+        const endVal = end.value || '';
+        const todayIso = formatISODate(new Date());
 
-    let datesValid = Boolean(startVal && endVal);
-    if (datesValid) {
-        if (startVal > endVal) {
-            datesValid = false;
+        let showStartError = false;
+        let showEndError = false;
+
+        if (!startVal || startVal >= todayIso) {
+            showStartError = true;
         }
-    }
 
-    toggleClass(start, 'is-invalid', !datesValid || !startVal);
-    toggleClass(startErr, 'hidden', datesValid && Boolean(startVal));
-    setDateInvalidState(startPicker, !(datesValid && Boolean(startVal)));
+        if (!endVal || endVal >= todayIso) {
+            showEndError = true;
+        }
 
-    toggleClass(end, 'is-invalid', !datesValid || !endVal);
-    toggleClass(endErr, 'hidden', datesValid && Boolean(endVal));
-    setDateInvalidState(endPicker, !(datesValid && Boolean(endVal)));
+        if (!showStartError && !showEndError && startVal > endVal) {
+            showEndError = true;
+        }
 
-    if (!datesValid) {
-        ok = false;
+        const datesValid = !(showStartError || showEndError);
+        toggleClass(startErr, 'hidden', !showStartError);
+        toggleClass(endErr, 'hidden', !showEndError);
+        toggleClass(dateRangeDisplay, 'is-invalid', !datesValid);
+
+        if (!datesValid) {
+            ok = false;
+        }
     }
 
     if (coordsValid && suppressCoordinateToast) {
@@ -621,6 +623,49 @@ function showLoading(on) {
     if (!overlay) return;
     overlay.classList.toggle('is-visible', on);
     overlay.setAttribute('aria-hidden', String(!on));
+}
+
+function setAnalysisLoadingFlag(active) {
+    try {
+        if (active) {
+            window.sessionStorage?.setItem(ANALYSIS_LOADING_KEY, '1');
+        } else {
+            window.sessionStorage?.removeItem(ANALYSIS_LOADING_KEY);
+        }
+    } catch (err) {
+        /* storage unavailable -> ignore */
+    }
+}
+
+function shouldRestoreAnalysisLoader() {
+    try {
+        return window.sessionStorage?.getItem(ANALYSIS_LOADING_KEY) === '1';
+    } catch (err) {
+        return false;
+    }
+}
+
+function restoreAnalysisLoaderIfNeeded() {
+    if (!shouldRestoreAnalysisLoader()) return;
+    const overlay = document.getElementById('loading_overlay');
+    if (!overlay) {
+        setAnalysisLoadingFlag(false);
+        return;
+    }
+    overlay.classList.add('is-visible');
+    overlay.setAttribute('aria-hidden', 'false');
+
+    const hide = () => {
+        overlay.classList.remove('is-visible');
+        overlay.setAttribute('aria-hidden', 'true');
+        setAnalysisLoadingFlag(false);
+    };
+
+    if (document.readyState === 'complete') {
+        hide();
+    } else {
+        window.addEventListener('load', hide, { once: true });
+    }
 }
 
 function initRadiusSlider() {
@@ -804,17 +849,19 @@ function setupAnalyzeButton() {
     form.elements.namedItem('end_date').value = document.getElementById('end_date').value;
     form.elements.namedItem('granularity').value = document.getElementById('granularity').value;
 
+    setAnalysisLoadingFlag(true);
     showLoading(true);
     form.submit();
   });
 }
 
 (async function boot() {
+  restoreAnalysisLoaderIfNeeded();
   initSyncButton();
   initLanguageSelector();
   initThemeToggle();
     initRadiusSlider();
-    initDatePickers();
+    initDateRangePicker();
     setupAnalyzeButton();
     validateForm({ suppressCoordinateToast: true });
     try {
@@ -825,6 +872,11 @@ function setupAnalyzeButton() {
         markMapUnavailable();
     }
 })();
+
+window.addEventListener('pageshow', () => {
+  setAnalysisLoadingFlag(false);
+  showLoading(false);
+});
 
 function createToastNode({ kind = 'info', title = '', message = '', autoDismiss = false, duration = 6000 }) {
   const card = document.createElement('div');

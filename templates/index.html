@@ -37,12 +37,8 @@
             src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    {% if js_strings['flatpickrLocale'] not in ['default', 'en', ''] %}
-        <script defer
-                src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/{{ js_strings['flatpickrLocale'] }}.js"></script>
-    {% endif %}
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
 </head>
 <body class="theme-dark min-h-screen bg-slate-950 text-slate-100 font-display antialiased">
@@ -138,23 +134,19 @@
                                 </div>
                             </div>
 
-                            <div class="grid gap-4 sm:grid-cols-2">
-                                <label class="flex flex-col gap-2 text-sm font-medium text-slate-300">
-                                    <span>{{ ui['start_date_label'] }}</span>
-                                    <input id="start_date" type="text"
-                                           class="date-input w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-slate-100 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/60"
-                                           placeholder="{{ js_strings['datePlaceholder'] }}" autocomplete="off">
-                                    <span id="start_error"
-                                          class="hidden text-xs font-normal text-red-300">{{ ui['start_date_error'] }}</span>
-                                </label>
-                                <label class="flex flex-col gap-2 text-sm font-medium text-slate-300">
-                                    <span>{{ ui['end_date_label'] }}</span>
-                                    <input id="end_date" type="text"
-                                           class="date-input w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-slate-100 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/60"
-                                           placeholder="{{ js_strings['datePlaceholder'] }}" autocomplete="off">
-                                    <span id="end_error"
-                                          class="hidden text-xs font-normal text-red-300">{{ ui['end_date_error'] }}</span>
-                                </label>
+                            <div class="flex flex-col gap-2 text-sm font-medium text-slate-300">
+                                <label for="date_range_display">{{ ui['date_range_label'] }}</label>
+                                <input id="date_range_display"
+                                       class="py-3 px-4 block w-full rounded-xl border border-white/10 bg-slate-950/60 text-sm text-slate-100 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/60 disabled:opacity-50 disabled:pointer-events-none"
+                                       type="text"
+                                       placeholder="{{ ui['date_range_placeholder'] }}"
+                                       readonly>
+                                <input id="start_date" type="hidden">
+                                <input id="end_date" type="hidden">
+                                <div class="space-y-1 text-xs font-normal text-red-300">
+                                    <span id="start_error" class="hidden">{{ ui['start_date_error'] }}</span>
+                                    <span id="end_error" class="hidden">{{ ui['end_date_error'] }}</span>
+                                </div>
                             </div>
 
                             <div>
@@ -243,6 +235,7 @@
     };
 </script>
 <div id="toast_container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+<script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js" defer></script>
 <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
 </body>
 </html>
