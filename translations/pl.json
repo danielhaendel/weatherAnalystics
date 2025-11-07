@@ -24,6 +24,8 @@
     "radius_max": "50 km",
     "date_range_label": "Zakres dat",
     "date_range_placeholder": "Wybierz zakres dat",
+    "date_range_hint": "Wybieraj daty maksymalnie do wczoraj – przyszłe dni są pomijane.",
+    "date_range_reset": "Resetuj",
     "start_date_error": "Data początkowa musi być w przeszłości.",
     "end_date_error": "Data końcowa musi być przed dzisiaj i po dacie początkowej.",
     "analyze_button": "Rozpocznij analizę",

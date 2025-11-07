@@ -73,6 +73,7 @@ const toastContainer = document.getElementById('toast_container');
 const dateRangeInput = document.getElementById('date_range_display');
 const startDateInput = document.getElementById('start_date');
 const endDateInput = document.getElementById('end_date');
+const dateRangeResetBtn = document.getElementById('date_range_reset');
 let rangePicker = null;
 
 let activeMarker = null;
@@ -418,11 +419,14 @@ function buildDefaultRange() {
     };
 }
 
-function setDateRangeValues(startValue, endValue, { syncDisplay = true } = {}) {
+function setDateRangeValues(startValue, endValue, { syncDisplay = true, syncPicker = false } = {}) {
     if (startDateInput) startDateInput.value = startValue || '';
     if (endDateInput) endDateInput.value = endValue || '';
     if (syncDisplay && dateRangeInput) {
         dateRangeInput.value = startValue && endValue ? `${startValue} – ${endValue}` : '';
+    }
+    if (syncPicker && rangePicker && startValue && endValue) {
+        rangePicker.setDateRange(startValue, endValue, true);
     }
 }
 
@@ -447,8 +451,8 @@ function initDateRangePicker() {
             format: 'YYYY-MM-DD',
             startDate: defaults.start,
             endDate: defaults.end,
-            numberOfMonths: window.innerWidth >= 640 ? 2 : 1,
-            numberOfColumns: window.innerWidth >= 640 ? 2 : 1,
+            numberOfMonths: 1,
+            numberOfColumns: 1,
             autoApply: true,
             minDate: '1950-01-01',
             maxDate: maxSelectable,
@@ -464,7 +468,7 @@ function initDateRangePicker() {
         picker.on('selected', (date1, date2) => {
             const start = date1 ? date1.format('YYYY-MM-DD') : '';
             const end = date2 ? date2.format('YYYY-MM-DD') : '';
-            setDateRangeValues(start, end);
+            setDateRangeValues(start, end, { syncPicker: false });
             validateForm({ suppressCoordinateToast: true });
         });
 
@@ -476,13 +480,34 @@ function initDateRangePicker() {
             rangePicker = instantiatePicker();
             if (rangePicker) {
                 rangePicker.show();
+                rangePicker.setDateRange(defaults.start, defaults.end, true);
             }
             dateRangeInput.removeEventListener('focus', onFocus);
         };
         dateRangeInput.addEventListener('focus', onFocus);
     } else {
         rangePicker = instantiatePicker();
+        if (rangePicker && defaults.start && defaults.end) {
+            rangePicker.setDateRange(defaults.start, defaults.end, true);
+        }
     }
+
+    if (dateRangeResetBtn) {
+        dateRangeResetBtn.addEventListener('click', () => {
+            const fresh = buildDefaultRange();
+            setDateRangeValues(fresh.start, fresh.end, { syncPicker: true });
+            if (rangePicker) {
+                rangePicker.setDateRange(fresh.start, fresh.end, true);
+            }
+            validateForm({ suppressCoordinateToast: true });
+        });
+    }
+
+    dateRangeInput.addEventListener('click', () => {
+        if (rangePicker) {
+            rangePicker.show();
+        }
+    });
 
     validateForm({ suppressCoordinateToast: true });
 }

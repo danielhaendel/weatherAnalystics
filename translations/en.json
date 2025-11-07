@@ -30,6 +30,8 @@
     "granularity_option_yearly": "Yearly",
     "date_range_label": "Date range",
     "date_range_placeholder": "Select a date range",
+    "date_range_hint": "Pick any period up to yesterday; we’ll ignore future dates automatically.",
+    "date_range_reset": "Reset",
     "start_date_error": "Start date needs to be in the past.",
     "end_date_error": "End date must be before today and after the start date.",
     "analyze_button": "Start analysis",

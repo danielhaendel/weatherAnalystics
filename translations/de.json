@@ -30,6 +30,8 @@
     "granularity_option_yearly": "Jahresbasis",
     "date_range_label": "Zeitraum",
     "date_range_placeholder": "Zeitraum auswählen",
+    "date_range_hint": "Zeiträume dürfen nur bis gestern gehen, zukünftige Tage werden ignoriert.",
+    "date_range_reset": "Zurücksetzen",
     "start_date_error": "Startdatum muss in der Vergangenheit liegen.",
     "end_date_error": "Enddatum muss vor heute liegen und nach dem Startdatum.",
     "analyze_button": "Auswertung starten",

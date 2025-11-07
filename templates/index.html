@@ -135,17 +135,36 @@
                             </div>
 
                             <div class="flex flex-col gap-2 text-sm font-medium text-slate-300">
-                                <label for="date_range_display">{{ ui['date_range_label'] }}</label>
-                                <input id="date_range_display"
-                                       class="py-3 px-4 block w-full rounded-xl border border-white/10 bg-slate-950/60 text-sm text-slate-100 focus:border-lime-400 focus:ring-2 focus:ring-lime-400/60 disabled:opacity-50 disabled:pointer-events-none"
-                                       type="text"
-                                       placeholder="{{ ui['date_range_placeholder'] }}"
-                                       readonly>
+                                <div class="flex items-center justify-between gap-4">
+                                    <label for="date_range_display" class="mb-0">{{ ui['date_range_label'] }}</label>
+                                    <button type="button" id="date_range_reset"
+                                            class="rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-slate-300 transition hover:border-lime-300 hover:text-lime-200 focus:outline-none focus:ring-2 focus:ring-lime-300/30">
+                                        {{ ui['date_range_reset'] }}
+                                    </button>
+                                </div>
+                                <div class="relative">
+                                    <span class="date-range-input-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                                             stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                                        </svg>
+                                    </span>
+                                    <input id="date_range_display"
+                                           class="date-range-input py-3 pr-4 pl-12 block w-full rounded-2xl border border-white/10 bg-slate-950/70 text-base text-slate-100 shadow-[0_10px_40px_-25px_rgba(15,23,42,1)] focus:border-lime-300 focus:ring-2 focus:ring-lime-300/40 disabled:opacity-50 disabled:pointer-events-none"
+                                           type="text"
+                                           placeholder="{{ ui['date_range_placeholder'] }}"
+                                           autocomplete="off"
+                                           readonly>
+                                </div>
                                 <input id="start_date" type="hidden">
                                 <input id="end_date" type="hidden">
-                                <div class="space-y-1 text-xs font-normal text-red-300">
-                                    <span id="start_error" class="hidden">{{ ui['start_date_error'] }}</span>
-                                    <span id="end_error" class="hidden">{{ ui['end_date_error'] }}</span>
+                                <div class="flex flex-col gap-1 text-xs">
+                                    <span class="text-slate-400">{{ ui['date_range_hint'] }}</span>
+                                    <span id="start_error" class="hidden font-semibold text-red-300">{{ ui['start_date_error'] }}</span>
+                                    <span id="end_error" class="hidden font-semibold text-red-300">{{ ui['end_date_error'] }}</span>
                                 </div>
                             </div>
 
