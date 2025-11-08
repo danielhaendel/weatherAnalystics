@@ -105,6 +105,18 @@ pytest -q
 
 ---
 
+## Docker
+
+**Container bauen und starten**
+
+```bash
+docker compose up --build
+```
+
+Der Dienst lauscht anschließend auf [http://127.0.0.1:5000](http://127.0.0.1:5000). Die `.env` wird automatisch eingebunden; stelle sicher, dass darin mindestens `GEOAPIFY_KEY` gesetzt ist.
+
+---
+
 ## API-Test mit Bruno
 
 Zur schnellen Überprüfung der REST-Endpunkte liegt eine Bruno-Collection unter `bruno/WeatherAnalytics` bereit:

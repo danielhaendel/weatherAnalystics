@@ -103,6 +103,7 @@ def create_app() -> Flask:
     app.config['APP_SUPPORTED_LANGUAGES'] = SUPPORTED_LANGUAGES
     app.config['APP_DEFAULT_LANGUAGE'] = DEFAULT_LANGUAGE
     app.config.setdefault('DATABASE', str(PROJECT_ROOT / 'instance' / 'weather.db'))
+    app.config.setdefault('DATABASE_TIMEOUT', 30)
     app.config.setdefault('LOG_LEVEL', 'INFO')
     app.config['SECRET_KEY'] = app.config.get('SECRET_KEY') or 'change-me'
 

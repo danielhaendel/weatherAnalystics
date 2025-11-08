@@ -22,7 +22,11 @@ def get_db() -> sqlite3.Connection:
     if 'db' not in g:
         db_file = get_database_path()
         db_file.parent.mkdir(parents=True, exist_ok=True)
-        conn = sqlite3.connect(db_file)
+        conn = sqlite3.connect(
+            db_file,
+            timeout=current_app.config.get('DATABASE_TIMEOUT', 30),
+            check_same_thread=False,
+        )
         conn.row_factory = sqlite3.Row
         g.db = conn
     return g.db

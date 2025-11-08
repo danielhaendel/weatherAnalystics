@@ -1,0 +1,15 @@
+services:
+  weather-analytics:
+    build: .
+    container_name: weather-analytics
+    ports:
+      - "80:5000"
+    env_file:
+      - .env
+    volumes:
+      - ./instance:/app/instance
+      - ./weather_analytics:/app/weather_analytics
+      - ./templates:/app/templates
+      - ./static:/app/static
+      - ./openapi.json:/app/openapi.json
+    restart: unless-stopped
