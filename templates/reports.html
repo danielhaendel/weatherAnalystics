@@ -41,7 +41,8 @@
                 <h1 class="text-3xl font-semibold text-white md:text-4xl">{{ ui['reports_headline'] }}</h1>
                 <p class="max-w-3xl text-sm text-slate-300 md:text-base">{{ ui['reports_subheadline'] }}</p>
             </div>
-            <div class="flex flex-col gap-2 md:items-end">
+            <div class="flex flex-col gap-3 md:items-end">
+                {% include '_language_theme_controls.html' %}
                 <div class="flex gap-3">
                     <a href="{{ url_for('index', lang=current_language) }}"
                        class="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-lime-300 hover:bg-white/10 hover:text-white">
@@ -151,11 +152,11 @@
                                 <tr class="align-middle" data-period-row>
                                     <td class="px-3 py-2">
                                         <button type="button"
-                                                class="flex w-full items-center gap-3 text-left text-sm font-semibold text-white"
+                                                class="period-toggle flex w-full items-center gap-3 text-left text-sm font-semibold"
                                                 data-period-toggle
                                                 aria-expanded="false"
                                                 aria-controls="{{ detail_id }}">
-                                            <span class="flex h-6 w-6 items-center justify-center rounded-full border border-white/20 text-xs text-white/80">
+                                            <span class="period-toggle__circle flex h-6 w-6 items-center justify-center rounded-full border text-xs">
                                                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor"
                                                      stroke-width="2" class="h-3 w-3 transition-transform duration-200"
                                                      data-toggle-icon>
@@ -163,7 +164,7 @@
                                                           stroke-linejoin="round"/>
                                                 </svg>
                                             </span>
-                                            <span>{{ row.period }}</span>
+                                            <span class="period-toggle__label">{{ row.period }}</span>
                                         </button>
                                     </td>
                                     <td class="px-3 py-2">{{ '%.2f'|format(row.temp_avg) if row.temp_avg is not none else '—' }}</td>
@@ -172,9 +173,9 @@
                                     <td class="px-3 py-2">{{ '%.2f'|format(row.precipitation) if row.precipitation is not none else '—' }}</td>
                                     <td class="px-3 py-2">{{ '%.2f'|format(row.sunshine) if row.sunshine is not none else '—' }}</td>
                                 </tr>
-                                <tr id="{{ detail_id }}" class="hidden bg-slate-900/40" data-period-detail>
+                                <tr id="{{ detail_id }}" class="period-detail-row hidden" data-period-detail>
                                     <td colspan="6" class="px-3 py-4">
-                                        <div class="rounded-2xl border border-white/5 bg-slate-950/60 p-4">
+                                        <div class="period-detail rounded-2xl border border-white/5 bg-slate-950/60 p-4">
                                             <div class="flex flex-col gap-1 text-sm text-slate-400 md:flex-row md:items-start md:justify-between">
                                                 <div>
                                                     <p class="text-xs uppercase tracking-wide text-slate-500">
@@ -255,7 +256,7 @@
                                             {{ ui['report_station_distance'].replace('{distance}', ('%.2f'|format(station.distance_km))) }}
                                         {% endif %}
                                     </div>
-                                    <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold {{ 'bg-lime-400/20 text-lime-200 border border-lime-300/40' if station.has_data else 'bg-slate-700/40 text-slate-300 border border-white/10' }}">
+                                    <span class="station-badge inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold {{ 'station-badge--used' if station.has_data else 'station-badge--unused' }}">
                                         {{ ui['report_station_badge_used'] if station.has_data else ui['report_station_badge_unused'] }}
                                     </span>
                                 </div>
@@ -291,6 +292,9 @@
     </div>
 </footer>
 
+{% include '_app_i18n_context.html' %}
+<script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+
 {% if report %}
     <script>
         const REPORT_CHART_DATA = {{ chart_data|tojson }};
@@ -298,7 +302,28 @@
             if (!REPORT_CHART_DATA) return;
             const ctx = document.getElementById('report_chart');
             if (!ctx) return;
-            new Chart(ctx, {
+
+            const palette = () => document.body.classList.contains('theme-light') ? ({
+                textColor: '#0f172a',
+                gridColor: 'rgba(15, 23, 42, 0.12)',
+                secondaryGridColor: 'rgba(15, 23, 42, 0.06)',
+                tempLineColor: '#1d4ed8',
+                tempFillColor: 'rgba(29, 78, 216, 0.18)',
+                precipColor: 'rgba(2, 132, 199, 0.35)',
+                sunshineColor: 'rgba(202, 138, 4, 0.35)',
+            }) : ({
+                textColor: '#e2e8f0',
+                gridColor: 'rgba(148, 163, 184, 0.15)',
+                secondaryGridColor: 'rgba(148, 163, 184, 0.08)',
+                tempLineColor: '#38bdf8',
+                tempFillColor: 'rgba(56, 189, 248, 0.25)',
+                precipColor: 'rgba(165, 243, 252, 0.45)',
+                sunshineColor: 'rgba(190, 242, 100, 0.35)',
+            });
+
+            let colors = palette();
+
+            const chart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: REPORT_CHART_DATA.labels,
@@ -307,23 +332,23 @@
                             type: 'line',
                             label: REPORT_CHART_DATA.labelsTemp,
                             data: REPORT_CHART_DATA.tempAvg,
-                            borderColor: '#38bdf8',
-                            backgroundColor: 'rgba(56, 189, 248, 0.25)',
+                            borderColor: colors.tempLineColor,
+                            backgroundColor: colors.tempFillColor,
                             tension: 0.2,
                             yAxisID: 'y',
                         },
                         {
                             label: REPORT_CHART_DATA.labelsPrecip,
                             data: REPORT_CHART_DATA.precipitation,
-                            backgroundColor: 'rgba(165, 243, 252, 0.45)',
-                            borderColor: 'rgba(165, 243, 252, 0.7)',
+                            backgroundColor: colors.precipColor,
+                            borderColor: colors.precipColor,
                             yAxisID: 'y1',
                         },
                         {
                             label: REPORT_CHART_DATA.labelsSunshine,
                             data: REPORT_CHART_DATA.sunshine,
-                            backgroundColor: 'rgba(190, 242, 100, 0.35)',
-                            borderColor: 'rgba(190, 242, 100, 0.7)',
+                            backgroundColor: colors.sunshineColor,
+                            borderColor: colors.sunshineColor,
                             yAxisID: 'y1',
                         },
                     ],
@@ -335,21 +360,59 @@
                     scales: {
                         y: {
                             position: 'left',
-                            ticks: {color: '#bae6fd'},
-                            grid: {color: 'rgba(148, 163, 184, 0.15)'},
+                            ticks: {color: colors.textColor},
+                            grid: {color: colors.gridColor},
+                            title: {
+                                display: true,
+                                text: REPORT_CHART_DATA.labelsTemp,
+                                color: colors.textColor,
+                                font: {size: 13, weight: 600},
+                            },
                         },
                         y1: {
                             position: 'right',
-                            ticks: {color: '#bbf7d0'},
-                            grid: {drawOnChartArea: false},
+                            ticks: {color: colors.textColor},
+                            grid: {color: colors.secondaryGridColor, drawOnChartArea: false},
+                            title: {
+                                display: true,
+                                text: `${REPORT_CHART_DATA.labelsPrecip} / ${REPORT_CHART_DATA.labelsSunshine}`,
+                                color: colors.textColor,
+                                font: {size: 13, weight: 600},
+                            },
                         },
                         x: {
-                            ticks: {color: '#cbd5f5'},
-                            grid: {color: 'rgba(148, 163, 184, 0.1)'},
+                            ticks: {color: colors.textColor},
+                            grid: {color: colors.secondaryGridColor},
+                            title: {
+                                display: true,
+                                text: '{{ ui['report_table_period'] }}',
+                                color: colors.textColor,
+                                font: {size: 13, weight: 600},
+                            },
                         },
                     },
-                    plugins: {legend: {labels: {color: '#e2e8f0'}}},
+                    plugins: {legend: {labels: {color: colors.textColor}}},
                 },
+            });
+            window.addEventListener('themechange', () => {
+                colors = palette();
+                chart.options.scales.y.ticks.color = colors.textColor;
+                chart.options.scales.y.grid.color = colors.gridColor;
+                chart.options.scales.y.title.color = colors.textColor;
+                chart.options.scales.y1.ticks.color = colors.textColor;
+                chart.options.scales.y1.grid.color = colors.secondaryGridColor;
+                chart.options.scales.y1.title.color = colors.textColor;
+                chart.options.scales.x.ticks.color = colors.textColor;
+                chart.options.scales.x.grid.color = colors.secondaryGridColor;
+                chart.options.scales.x.title.color = colors.textColor;
+                chart.options.plugins.legend.labels.color = colors.textColor;
+                chart.data.datasets[0].borderColor = colors.tempLineColor;
+                chart.data.datasets[0].backgroundColor = colors.tempFillColor;
+                chart.data.datasets[1].backgroundColor = colors.precipColor;
+                chart.data.datasets[1].borderColor = colors.precipColor;
+                chart.data.datasets[2].backgroundColor = colors.sunshineColor;
+                chart.data.datasets[2].borderColor = colors.sunshineColor;
+                chart.update();
             });
         });
     </script>

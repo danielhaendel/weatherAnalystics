@@ -33,7 +33,9 @@ const DEFAULT_JS_TEXT = {
 
 const APP_I18N = window.APP_I18N || {};
 const JS_STRINGS = APP_I18N.js || {};
-const CURRENT_LANG = APP_I18N.lang || JS_STRINGS.lang || 'en';
+const HTML_LANG = document.documentElement?.lang || '';
+const CURRENT_LANG = APP_I18N.lang || JS_STRINGS.lang || HTML_LANG || 'en';
+const SUPPORTED_LANGUAGES = APP_I18N.languages || [];
 const TEXT = { ...DEFAULT_JS_TEXT, ...JS_STRINGS };
 const ANALYSIS_LOADING_KEY = 'analysis_loading_state';
 
@@ -94,6 +96,7 @@ const REGION_LOADING_TEXT = TEXT.regionLoading;
 const REGION_DEFAULT_TEXT = TEXT.regionDefault;
 const REGION_EMPTY_TEXT = TEXT.regionEmpty;
 const THEME_STORAGE_KEY = "weather_theme_preference";
+const LANG_STORAGE_KEY = "weather_language_preference";
 const REGION_STATION_UNKNOWN = TEXT.regionStationUnknown || '--';
 const REGION_TITLE_DEFAULT = regionTitleEl?.dataset?.default || REGION_EMPTY_TEXT;
 const REGION_META_DEFAULT = regionMetaEl?.dataset?.default || '';
@@ -108,6 +111,49 @@ let leafletFallbackInjected = false;
 
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getStoredLanguage() {
+    try {
+        return window.localStorage?.getItem(LANG_STORAGE_KEY);
+    } catch (err) {
+        console.warn('Language storage unavailable', err);
+        return null;
+    }
+}
+
+function storeLanguagePreference(value) {
+    if (!value) return;
+    try {
+        window.localStorage?.setItem(LANG_STORAGE_KEY, value);
+    } catch (err) {
+        console.warn('Language storage unavailable', err);
+    }
+}
+
+function isSupportedLanguage(code) {
+    if (!code) return false;
+    if (SUPPORTED_LANGUAGES.includes(code)) return true;
+    return Boolean(document.querySelector(`[data-language-picker] [data-lang="${code}"]`));
+}
+
+function ensureLanguagePreference() {
+    const stored = getStoredLanguage();
+    if (!stored) {
+        if (isSupportedLanguage(CURRENT_LANG)) {
+            storeLanguagePreference(CURRENT_LANG);
+        }
+        return;
+    }
+    if (stored === CURRENT_LANG) return;
+    if (!isSupportedLanguage(stored)) {
+        storeLanguagePreference(CURRENT_LANG);
+        return;
+    }
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('lang') === stored) return;
+    url.searchParams.set('lang', stored);
+    window.location.replace(url.toString());
 }
 
 function clearStationMarkers() {
@@ -690,6 +736,11 @@ function applyTheme(theme, {skipSave = false} = {}) {
     if (!skipSave) {
         setStoredTheme(normalized);
     }
+    try {
+        window.dispatchEvent(new CustomEvent('themechange', { detail: normalized }));
+    } catch (err) {
+        /* ignore */
+    }
 }
 
 function initThemeToggle() {
@@ -973,6 +1024,7 @@ function initLanguageSelector() {
             const nextLang = item.dataset.lang;
             closeMenu();
             if (!nextLang || nextLang === CURRENT_LANG) return;
+            storeLanguagePreference(nextLang);
             const url = new URL(window.location.href);
             url.searchParams.set('lang', nextLang);
             window.location.href = url.toString();
@@ -1022,6 +1074,7 @@ function setupAnalyzeButton() {
 }
 
 (async function boot() {
+  ensureLanguagePreference();
   restoreAnalysisLoaderIfNeeded();
   initSyncButton();
   initLanguageSelector();

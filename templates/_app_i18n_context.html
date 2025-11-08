@@ -1,0 +1,9 @@
+<script>
+    window.APP_I18N = Object.assign({}, window.APP_I18N, {
+        lang: {{ (current_language if current_language is defined else nav_current_language)|tojson }},
+        languages: {{ (nav_languages | map(attribute='code') | list)|tojson }}
+        {% if js_strings is defined %}
+        ,js: {{ js_strings|tojson }}
+        {% endif %}
+    });
+</script>

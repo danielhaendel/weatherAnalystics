@@ -17,16 +17,17 @@
         }
     </style>
 </head>
-<body class="min-h-screen bg-slate-950 text-slate-100">
+<body class="theme-dark min-h-screen bg-slate-950 text-slate-100">
 {% set loader_text = 'Daten werden aktualisiert...' %}{% include '_loader.html' %}
-<header class="border-b border-slate-800 bg-slate-900/80">
+<header class="border-b border-white/10 bg-slate-900/80">
     <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <div>
-            <p class="text-xs uppercase tracking-[0.35em] text-lime-300/80">Adminbereich</p>
+            <p class="header-tagline text-xs uppercase tracking-[0.35em]">Adminbereich</p>
             <h1 class="text-2xl font-semibold">Hallo, {{ current_user.username }}</h1>
         </div>
-        <div class="flex items-center gap-3">
-            <a href="{{ url_for('index') }}" class="text-sm text-lime-300 hover:text-lime-100">Zur Startseite</a>
+        <div class="flex flex-wrap items-center gap-3 justify-end">
+            {% include '_language_theme_controls.html' %}
+            <a href="{{ url_for('index') }}" class="header-link text-sm">Zur Startseite</a>
             <form method="post" action="{{ url_for('auth.logout') }}" data-show-loader="true">
                 <button type="submit" class="text-sm text-slate-400 transition hover:text-red-300">Abmelden</button>
             </form>
@@ -37,15 +38,15 @@
 {% set flashes = get_flashed_messages(with_categories=True) %}
 
 <main class="mx-auto flex w-full max-w-6xl flex-1 gap-8 px-6 py-10 pb-16 min-h-[calc(100vh-160px)]">
-    <aside class="w-full max-w-xs rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+    <aside class="w-full max-w-xs rounded-2xl border border-white/10 bg-slate-900/70 p-6">
         <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Navigation</p>
         <nav class="mt-4 flex flex-col gap-1 text-sm">
             <a href="{{ url_for('auth.admin', section='data') }}"
-               class="flex items-center justify-between rounded-xl px-4 py-3 transition {{ 'bg-slate-800/80 text-white' if active_section == 'data' else 'text-slate-400 hover:bg-slate-800/40 hover:text-white' }}">
+               class="flex items-center justify-between rounded-xl px-4 py-3 transition {{ 'bg-white/5 text-white border border-white/15' if active_section == 'data' else 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent' }}">
                 <span>Daten aktualisieren</span>
             </a>
             <a href="{{ url_for('auth.admin', section='password') }}"
-               class="flex items-center justify-between rounded-xl px-4 py-3 transition {{ 'bg-slate-800/80 text-white' if active_section == 'password' else 'text-slate-400 hover:bg-slate-800/40 hover:text-white' }}">
+               class="flex items-center justify-between rounded-xl px-4 py-3 transition {{ 'bg-white/5 text-white border border-white/15' if active_section == 'password' else 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent' }}">
                 <span>Passwort ändern</span>
             </a>
         </nav>
@@ -53,7 +54,7 @@
 
     <section class="flex-1 space-y-6">
         {% if active_section == 'password' %}
-            <div class="flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900/70 p-6 min-h-[calc(100vh-220px)] pb-10">
+            <div class="flex h-full flex-col rounded-2xl border border-white/10 bg-slate-900/70 p-6 min-h-[calc(100vh-220px)] pb-10">
                 <h2 class="text-xl font-semibold text-white">Passwort ändern</h2>
                 <p class="mt-1 text-sm text-slate-400">Vergeben Sie ein neues Passwort für das aktuelle Konto.</p>
                 <form method="post" action="{{ url_for('auth.change_password') }}" class="mt-6 space-y-4"
@@ -88,7 +89,7 @@
                 </form>
             </div>
         {% else %}
-            <div class="flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900/70 p-6 min-h-[calc(100vh-220px)] pb-10">
+            <div class="flex h-full flex-col rounded-2xl border border-white/10 bg-slate-900/70 p-6 min-h-[calc(100vh-220px)] pb-10">
                 <h2 class="text-xl font-semibold text-white">Daten aktualisieren</h2>
                 <p class="mt-1 text-sm text-slate-400">Führen Sie manuelle Aktualisierungen der importierten DWD-Daten
                     durch.</p>
@@ -100,7 +101,7 @@
                                 <p class="text-xs text-slate-400">Lädt die Stations-Metadaten neu vom DWD.</p>
                             </div>
                             <button type="button" data-import-trigger="stations"
-                                    class="rounded-lg border border-lime-500/40 bg-lime-500/10 px-4 py-2 text-sm font-semibold text-lime-200 transition hover:border-lime-400 hover:bg-lime-400/20 disabled:cursor-not-allowed disabled:opacity-60">
+                                    class="rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-lime-400 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60">
                                 Starten
                             </button>
                         </div>
@@ -113,7 +114,7 @@
                                     herunter.</p>
                             </div>
                             <button type="button" data-import-trigger="weather"
-                                    class="rounded-lg border border-sky-500/40 bg-sky-500/10 px-4 py-2 text-sm font-semibold text-sky-200 transition hover:border-sky-400 hover:bg-sky-400/20 disabled:cursor-not-allowed disabled:opacity-60">
+                                    class="rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-sky-400 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60">
                                 Starten
                             </button>
                         </div>
@@ -126,6 +127,8 @@
 
 <div id="toast_container" class="fixed right-6 top-6 z-50 flex w-full max-w-sm flex-col items-end" aria-live="polite"
      aria-atomic="true"></div>
+<script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+{% include '_app_i18n_context.html' %}
 <script type="application/json" id="flash-data">{{ flashes|tojson }}</script>
 <script>
     (function () {
@@ -164,7 +167,7 @@
             }
             const variant = VARIANTS[kind] || VARIANTS.info;
             const toast = document.createElement('div');
-            toast.className = `relative flex items-center w-full max-w-sm gap-3 p-4 pb-6 mb-4 rounded-2xl border shadow-lg backdrop-blur-xl bg-slate-950/90 text-slate-100 transform transition-all duration-300 ease-out translate-x-6 opacity-0 ${variant.border}`;
+            toast.className = `admin-toast relative flex items-center w-full max-w-sm gap-3 p-4 pb-6 mb-4 rounded-2xl border shadow-lg backdrop-blur-xl transform transition-all duration-300 ease-out translate-x-6 opacity-0 ${variant.border}`;
             toast.setAttribute('role', 'alert');
 
             const iconWrapper = document.createElement('div');
@@ -177,7 +180,7 @@
 
             const closeButton = document.createElement('button');
             closeButton.type = 'button';
-            closeButton.className = 'ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-slate-500/60';
+            closeButton.className = 'admin-toast__close ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500/60';
             closeButton.innerHTML = '<span class="sr-only">Schließen</span><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>';
 
             let timer = null;
@@ -185,7 +188,7 @@
             let remaining = duration;
 
             const progressWrapper = document.createElement('div');
-            progressWrapper.className = 'pointer-events-none absolute inset-x-4 bottom-3 h-1 rounded-full bg-slate-800/70';
+            progressWrapper.className = 'pointer-events-none absolute inset-x-4 bottom-3 h-1 rounded-full bg-slate-200/70 dark:bg-slate-800/70';
             const progressBar = document.createElement('span');
             progressBar.className = 'block h-full w-full rounded-full bg-gradient-to-r from-lime-400 via-emerald-400 to-sky-400';
             progressWrapper.appendChild(progressBar);

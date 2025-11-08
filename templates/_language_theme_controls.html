@@ -1,0 +1,51 @@
+<div class="flex items-center gap-3 header-controls">
+    <div class="language-picker" data-language-picker>
+        <span class="sr-only">{{ ui['language_select_aria'] if ui is defined else 'Sprache wählen' }}</span>
+        <button id="language_menu_button" type="button" class="language-picker__button"
+                aria-haspopup="listbox" aria-expanded="false">
+            <span class="language-picker__flag"
+                  aria-hidden="true">{{ (nav_current_language_option['flag']|safe) if nav_current_language_option else '' }}</span>
+            <span class="language-picker__label">{{ nav_current_language_option['label'] if nav_current_language_option else nav_current_language|upper }}</span>
+            <svg class="language-picker__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m6 9 6 6 6-6"/>
+            </svg>
+        </button>
+
+        <div id="language_menu" class="language-menu hidden" role="listbox"
+             aria-labelledby="language_menu_button">
+            {% for language in nav_languages %}
+                <button type="button"
+                        class="language-menu__item {% if language['code'] == nav_current_language %}is-active{% endif %}"
+                        data-lang="{{ language['code'] }}" role="option"
+                        {% if language['code'] == nav_current_language %}aria-selected="true"
+                        {% else %}aria-selected="false"{% endif %}>
+                    <span class="language-menu__flag" aria-hidden="true">{{ language['flag']|safe }}</span>
+                    <span class="language-menu__text">{{ language['label'] }}</span>
+                </button>
+            {% endfor %}
+        </div>
+    </div>
+    <button id="theme_toggle" type="button" class="theme-toggle" aria-pressed="true"
+            aria-label="{{ ui['theme_toggle_label'] if ui is defined else 'Darstellung wechseln' }}">
+        <span class="sr-only">{{ ui['theme_toggle_label'] if ui is defined else 'Darstellung wechseln' }}</span>
+        <svg class="theme-toggle__icon" data-icon="moon" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true">
+            <path d="M21 12.79A9 9 0 0 1 11.21 3 7 7 0 1 0 21 12.79z"/>
+        </svg>
+        <svg class="theme-toggle__icon hidden" data-icon="sun" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+             aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2"/>
+            <path d="M12 20v2"/>
+            <path d="m4.93 4.93 1.41 1.41"/>
+            <path d="m17.66 17.66 1.41 1.41"/>
+            <path d="M2 12h2"/>
+            <path d="M20 12h2"/>
+            <path d="m6.34 17.66-1.41 1.41"/>
+            <path d="m19.07 4.93-1.41 1.41"/>
+        </svg>
+    </button>
+</div>

@@ -136,6 +136,19 @@ def create_app() -> Flask:
         )
         return resolved_lang, ui_strings, js_strings, current_option
 
+    @app.context_processor
+    def inject_navigation_context():
+        resolved_lang = resolve_language()
+        current_option = next(
+            (opt for opt in language_options if opt['code'] == resolved_lang),
+            language_options[0],
+        )
+        return {
+            'nav_languages': language_options,
+            'nav_current_language': resolved_lang,
+            'nav_current_language_option': current_option,
+        }
+
     def _parse_report_params(args):
         try:
             lat = float(args.get('lat'))
