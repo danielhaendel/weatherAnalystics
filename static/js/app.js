@@ -74,6 +74,7 @@ const dateRangeInput = document.getElementById('date_range_display');
 const startDateInput = document.getElementById('start_date');
 const endDateInput = document.getElementById('end_date');
 const dateRangeResetBtn = document.getElementById('date_range_reset');
+const DATE_DISPLAY_DELIMITER = ' – ';
 let rangePicker = null;
 
 let activeMarker = null;
@@ -408,6 +409,23 @@ function formatISODate(date) {
     return adjusted.toISOString().slice(0, 10);
 }
 
+function formatGermanDate(isoDate) {
+    if (typeof isoDate !== 'string') return '';
+    const match = isoDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return isoDate || '';
+    const [, year, month, day] = match;
+    return `${day}.${month}.${year}`;
+}
+
+function formatDisplayRange(startValue, endValue) {
+    const startDisplay = formatGermanDate(startValue);
+    const endDisplay = formatGermanDate(endValue);
+    if (startDisplay && endDisplay) {
+        return `${startDisplay}${DATE_DISPLAY_DELIMITER}${endDisplay}`;
+    }
+    return startDisplay || endDisplay || '';
+}
+
 function buildDefaultRange() {
     const end = new Date();
     end.setDate(end.getDate() - 1);
@@ -423,7 +441,7 @@ function setDateRangeValues(startValue, endValue, { syncDisplay = true, syncPick
     if (startDateInput) startDateInput.value = startValue || '';
     if (endDateInput) endDateInput.value = endValue || '';
     if (syncDisplay && dateRangeInput) {
-        dateRangeInput.value = startValue && endValue ? `${startValue} – ${endValue}` : '';
+        dateRangeInput.value = formatDisplayRange(startValue, endValue);
     }
     if (syncPicker && rangePicker && startValue && endValue) {
         rangePicker.setDateRange(startValue, endValue, true);
@@ -448,7 +466,8 @@ function initDateRangePicker() {
         const picker = new Litepicker({
             element: dateRangeInput,
             singleMode: false,
-            format: 'YYYY-MM-DD',
+            format: 'DD.MM.YYYY',
+            delimiter: DATE_DISPLAY_DELIMITER,
             startDate: defaults.start,
             endDate: defaults.end,
             numberOfMonths: 1,

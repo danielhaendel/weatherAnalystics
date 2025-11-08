@@ -46,6 +46,29 @@ def load_translations(directory: Path, preferred_default: str) -> Tuple[Dict[str
 TRANSLATIONS, SUPPORTED_LANGUAGES, DEFAULT_LANGUAGE = load_translations(TRANSLATIONS_DIR, FALLBACK_LANGUAGE)
 
 
+def format_iso_date_de(value: str | None) -> str:
+    """Convert ISO date (YYYY-MM-DD) to German format (DD.MM.YYYY)."""
+    if not value:
+        return ''
+    parts = value.split('-')
+    if len(parts) == 3 and all(part.isdigit() for part in parts):
+        year, month, day = parts
+        return f'{day.zfill(2)}.{month.zfill(2)}.{year}'
+    return value
+
+
+def format_period_label(period: str, granularity: str) -> str:
+    """Return a localized label for aggregated report periods."""
+    if not period:
+        return ''
+    if granularity == 'day':
+        return format_iso_date_de(period)
+    if granularity == 'month' and len(period) == 7 and period[4] == '-':
+        year, month = period.split('-')
+        return f'{month.zfill(2)}.{year}'
+    return period
+
+
 def resolve_language() -> str:
     """Determine the preferred language for the current request."""
     query_lang = request.args.get('lang', type=str)
@@ -159,8 +182,14 @@ def create_app() -> Flask:
                 report = generate_report(conn, lat, lon, radius, start_date, end_date, granularity)
                 report['period_count'] = len(report['periods'])
                 report['station_count'] = len(report['stations'])
+                report['params']['start_date'] = format_iso_date_de(report['params'].get('start_date'))
+                report['params']['end_date'] = format_iso_date_de(report['params'].get('end_date'))
+                for row in report['periods']:
+                    row['period'] = format_period_label(row['period'], report['granularity'])
                 temperature_average = temp_durchschnitt_auswertung(conn, lat, lon, start_date, end_date, radius)
                 temp_samples = temperature_samples(conn, lat, lon, start_date, end_date, radius, TEMPERATURE_SAMPLE_LIMIT)
+                for sample in temp_samples:
+                    sample['date'] = format_iso_date_de(sample.get('date'))
                 chart_data = {
                     'labels': [row['period'] for row in report['periods']],
                     'tempAvg': [row['temp_avg'] for row in report['periods']],
