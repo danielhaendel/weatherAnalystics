@@ -37,7 +37,7 @@
     <div class="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-6 py-8 md:px-12">
         <header class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div class="flex flex-col gap-2">
-                <p class="text-xs uppercase tracking-[0.35em] text-lime-300/80">{{ ui['header_tagline'] }}</p>
+                <p class="header-tagline text-xs uppercase tracking-[0.35em]">{{ ui['header_tagline'] }}</p>
                 <h1 class="text-3xl font-semibold text-white md:text-4xl">{{ ui['reports_headline'] }}</h1>
                 <p class="max-w-3xl text-sm text-slate-300 md:text-base">{{ ui['reports_subheadline'] }}</p>
             </div>
@@ -277,15 +277,15 @@
     </div>
 </div>
 
-<footer class="border-t border-white/10 bg-slate-950/80 py-6 text-sm text-slate-400">
+<footer class="site-footer border-t border-white/10 bg-slate-950/80 py-6 text-sm text-slate-400">
     <div class="mx-auto flex w-full max-w-6xl flex-col gap-2 px-6 md:flex-row md:items-center md:justify-between md:px-12">
         <span>© {{ ui['title'] }}</span>
         <div class="flex items-center gap-3">
-            <a href="{{ url_for('index') }}" class="text-slate-400 transition hover:text-lime-300">{{ ui['brand'] }}</a>
+            <a href="{{ url_for('index') }}" class="site-footer__link">{{ ui['brand'] }}</a>
             {% if current_user.is_authenticated %}
-                <a href="{{ url_for('auth.admin') }}" class="text-slate-400 transition hover:text-lime-300">Admin</a>
+                <a href="{{ url_for('auth.admin') }}" class="site-footer__link">Admin</a>
             {% else %}
-                <a href="{{ url_for('auth.login') }}" class="text-slate-400 transition hover:text-lime-300">Login</a>
+                <a href="{{ url_for('auth.login') }}" class="site-footer__link">Login</a>
             {% endif %}
         </div>
     </div>

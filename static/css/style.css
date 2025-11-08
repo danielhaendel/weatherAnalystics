@@ -157,6 +157,37 @@ body.theme-light .border-red-500\/50 {
     border-color: rgba(248, 113, 113, 0.45) !important;
 }
 
+.header-tagline {
+    color: #a3e635;
+}
+
+body.theme-light .header-tagline {
+    color: #1e3a8a;
+}
+
+.site-footer__link {
+    color: #cbd5f5;
+    transition: color 0.2s ease;
+}
+
+.site-footer__link:hover {
+    color: #a3e635;
+}
+
+body.theme-light .site-footer {
+    background: rgba(248, 250, 252, 0.92) !important;
+    border-color: rgba(15, 23, 42, 0.1) !important;
+    color: #0f172a !important;
+}
+
+body.theme-light .site-footer__link {
+    color: #0f172a;
+}
+
+body.theme-light .site-footer__link:hover {
+    color: #2563eb;
+}
+
 .station-marker-icon {
     border: none !important;
     background: transparent !important;
@@ -938,7 +969,7 @@ body.theme-light .date-range-input::placeholder {
 }
 
 .litepicker .container__days .day-item.is-in-range {
-    background-color: #608d8f;
+    background-color: #8ae4e8;
 }
 
 .litepicker .button-next,
