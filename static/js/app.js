@@ -96,7 +96,7 @@ const REGION_EMPTY_TEXT = TEXT.regionEmpty;
 const THEME_STORAGE_KEY = "weather_theme_preference";
 const REGION_STATION_UNKNOWN = TEXT.regionStationUnknown || '--';
 const REGION_TITLE_DEFAULT = regionTitleEl?.dataset?.default || REGION_EMPTY_TEXT;
-const REGION_META_DEFAULT = regionMetaEl?.dataset?.default || REGION_DEFAULT_TEXT;
+const REGION_META_DEFAULT = regionMetaEl?.dataset?.default || '';
 const REGION_STATION_DEFAULT = regionStationNameEl?.dataset?.default || REGION_STATION_UNKNOWN;
 
 let regionLookupSeq = 0;
@@ -160,11 +160,11 @@ function formatCoordinate(value, axis) {
 
 function setRegionLabel(title, { meta, stationName, stationDistance } = {}) {
   const resolvedTitle = title || REGION_TITLE_DEFAULT;
-  const resolvedMeta = meta || REGION_META_DEFAULT;
+  const resolvedMeta = typeof meta === 'string' ? meta : REGION_META_DEFAULT;
   const resolvedStation = stationName || REGION_STATION_DEFAULT;
 
   if (regionTitleEl) regionTitleEl.textContent = resolvedTitle;
-  if (regionMetaEl) regionMetaEl.textContent = resolvedMeta;
+  if (regionMetaEl) regionMetaEl.textContent = resolvedMeta || '';
   if (regionStationNameEl) regionStationNameEl.textContent = resolvedStation;
 
   const hasStationDetails = Boolean(stationDistance) ||
@@ -204,13 +204,16 @@ async function resolveRegionName(lat, lon) {
     const city = data.city || data.town || data.village || data.municipality
       || data.locality || data.city_district || data.place || data.name;
     const stateName = data.state || data.region || data.county;
+    const countryName = data.country || data.country_code || REGION_META_DEFAULT;
     const stationInfo = await fetchNearestStationInfo(lat, lon, lookupId);
 
     const displayTitle = city || stationInfo?.title || REGION_DEFAULT_TEXT;
     const metaParts = new Set();
     if (stateName) metaParts.add(stateName);
     if (!stateName && stationInfo?.state) metaParts.add(stationInfo.state);
-    metaParts.add(REGION_DEFAULT_TEXT);
+    if (countryName) {
+        metaParts.add(countryName);
+    }
     const meta = Array.from(metaParts).filter(Boolean).join(', ');
 
     setRegionLabel(displayTitle, {
@@ -226,7 +229,6 @@ async function resolveRegionName(lat, lon) {
           if (info) {
             const metaParts = new Set();
             if (info.state) metaParts.add(info.state);
-            metaParts.add(REGION_DEFAULT_TEXT);
             setRegionLabel(info.title || REGION_DEFAULT_TEXT, {
               meta: Array.from(metaParts).filter(Boolean).join(', '),
               stationName: info.stationDisplay || REGION_STATION_DEFAULT,
