@@ -49,7 +49,7 @@
     "report_period_details_subtitle": "Stations contributing measurements for this period",
     "report_period_details_empty": "No station measurements for this period.",
     "report_stations_heading": "Weather stations",
-    "report_station_usage_found": "Stations found",
+    "report_station_usage_found": "Stations",
     "report_station_usage_used": "Used in analysis",
     "report_station_usage_caption": "Only stations with actual measurements contribute to the results.",
     "report_station_badge_used": "Has data",

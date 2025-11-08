@@ -8,7 +8,12 @@ from flask import Blueprint, request, jsonify, abort, current_app
 
 from ..dwd_kl_importer import import_station_metadata
 from ..db import get_db
-from ..report_service import ReportError, generate_report, get_coverage
+from ..report_service import (
+    ReportError,
+    generate_report,
+    get_coverage,
+    stations_within_radius,
+)
 
 api_bp = Blueprint('api', __name__)
 
@@ -199,6 +204,43 @@ def analyze():
         'summary': summary_template.format(lat=lat, lon=lon, start=start_date, end=end_date),
     }
     return jsonify(result), 200
+
+
+@api_bp.get('/stations_in_radius')
+def stations_in_radius_api():
+    """Return station metadata within the requested radius for map overlays."""
+    try:
+        lat = float(request.args.get('lat'))
+        lon = float(request.args.get('lon'))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'invalid_coordinates'}), 400
+
+    try:
+        radius = float(request.args.get('radius') or 10.0)
+    except (TypeError, ValueError):
+        return jsonify({'error': 'invalid_radius'}), 400
+
+    radius = max(0.5, min(radius, 100.0))
+    try:
+        limit = int(request.args.get('limit', 25))
+    except (TypeError, ValueError):
+        limit = 25
+    limit = max(1, min(limit, 100))
+
+    conn = get_db()
+    rows = stations_within_radius(conn, lat, lon, radius, limit)
+    stations = [
+        {
+            'station_id': row['station_id'],
+            'name': row['name'],
+            'state': row['state'],
+            'latitude': row['latitude'],
+            'longitude': row['longitude'],
+            'distance_km': row['distance_km'],
+        }
+        for row in rows
+    ]
+    return jsonify({'stations': stations})
 
 
 @api_bp.post('/sync_stations')

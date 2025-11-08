@@ -69,8 +69,7 @@
                         </p>
                     </div>
                     <div class="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-                        <p class="text-xs uppercase tracking-wide text-slate-500">{{ ui['report_stations_heading'] }}</p>
-                        <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
                                 <p class="text-xs uppercase tracking-wide text-slate-500">{{ ui['report_station_usage_found'] }}</p>
                                 <p class="mt-1 text-2xl font-semibold text-white">{{ report.station_count }}</p>
@@ -80,7 +79,6 @@
                                 <p class="mt-1 text-2xl font-semibold text-white">{{ report.used_station_count or 0 }}</p>
                             </div>
                         </div>
-                        <p class="mt-3 text-xs text-slate-500">{{ ui['report_station_usage_caption'] }}</p>
                     </div>
                 </section>
 

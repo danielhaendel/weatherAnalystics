@@ -55,7 +55,7 @@
     "report_period_details_subtitle": "Stacje z pomiarami dla tego okresu",
     "report_period_details_empty": "Brak pomiarów stacji dla tego okresu.",
     "report_stations_heading": "Wykorzystane stacje",
-    "report_station_usage_found": "Znalezione stacje",
+    "report_station_usage_found": "Stacje",
     "report_station_usage_used": "Wykorzystane w analizie",
     "report_station_usage_caption": "W obliczeniach uwzględniamy tylko stacje z rzeczywistymi pomiarami.",
     "report_station_badge_used": "Ma dane",

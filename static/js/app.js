@@ -79,6 +79,9 @@ let rangePicker = null;
 
 let activeMarker = null;
 let leafletMap = null;
+let stationMarkerLayer = null;
+let stationMarkerRequestSeq = 0;
+let radiusInputTimeout = null;
 
 const REGION_LOADING_TEXT = TEXT.regionLoading;
 const REGION_DEFAULT_TEXT = TEXT.regionDefault;
@@ -98,6 +101,19 @@ let leafletFallbackInjected = false;
 
 function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function clearStationMarkers() {
+    if (stationMarkerLayer) {
+        stationMarkerLayer.clearLayers();
+    }
+}
+
+function getSelectedRadiusValue() {
+    const radiusEl = document.getElementById('radius');
+    const value = radiusEl ? Number(radiusEl.value) : NaN;
+    if (Number.isFinite(value)) return value;
+    return 10;
 }
 
 function injectLeafletFallback() {
@@ -282,6 +298,7 @@ function updateCoordinateSummary(lat, lon) {
     if (latLabel) latLabel.textContent = formatCoordinate(fixedLat, 'lat');
     if (lonLabel) lonLabel.textContent = formatCoordinate(fixedLon, 'lon');
     resolveRegionName(fixedLat, fixedLon);
+    scheduleStationMarkerRefresh(true);
 }
 
 function resetCoordinateSummary() {
@@ -296,6 +313,7 @@ function resetCoordinateSummary() {
       stationName: REGION_STATION_DEFAULT,
       stationDistance: '',
     });
+    clearStationMarkers();
 }
 
 function showCoordinateError(message) {
@@ -331,6 +349,88 @@ function markMapUnavailable(message = TEXT.mapUnavailable) {
     fallback.style.background = 'rgba(15, 23, 42, 0.85)';
     fallback.style.borderRadius = 'inherit';
     mapElement.appendChild(fallback);
+}
+
+function buildStationTooltip(station) {
+    const name = station.name || TEXT.regionStationUnknown || `ID ${station.station_id}`;
+    const lines = [`<strong>${name}</strong>`];
+    const detailParts = [];
+    detailParts.push(`ID ${station.station_id}`);
+    if (station.state) {
+        detailParts.push(station.state);
+    }
+    if (typeof station.distance_km === 'number' && Number.isFinite(station.distance_km)) {
+        const template = TEXT.regionStationDistance || 'Distance: {distance} km';
+        detailParts.push(template.replace('{distance}', station.distance_km.toFixed(2)));
+    }
+    lines.push(detailParts.join('<br>'));
+    return lines.join('<br>');
+}
+
+async function refreshStationMarkers() {
+    if (!leafletMap || !stationMarkerLayer) return;
+    const lat = Number(latField.value);
+    const lon = Number(lonField.value);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        clearStationMarkers();
+        return;
+    }
+    const radius = getSelectedRadiusValue();
+    stationMarkerRequestSeq += 1;
+    const requestId = stationMarkerRequestSeq;
+    const params = new URLSearchParams({
+        lat: lat.toString(),
+        lon: lon.toString(),
+        radius: radius.toString(),
+        limit: '40',
+    });
+    try {
+        const resp = await fetch(`/api/stations_in_radius?${params.toString()}`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        if (requestId !== stationMarkerRequestSeq) return;
+        clearStationMarkers();
+        (data.stations || []).forEach((station) => {
+            if (!Number.isFinite(station.latitude) || !Number.isFinite(station.longitude)) {
+                return;
+            }
+            const marker = L.circleMarker(
+                [station.latitude, station.longitude],
+                {
+                    radius: 6,
+                    color: '#facc15',
+                    weight: 1,
+                    fillColor: '#fef08a',
+                    fillOpacity: 0.85,
+                },
+            );
+            marker.bindTooltip(buildStationTooltip(station), {
+                direction: 'top',
+                offset: [0, -6],
+                opacity: 0.9,
+                sticky: true,
+            });
+            marker.addTo(stationMarkerLayer);
+        });
+    } catch (err) {
+        if (requestId === stationMarkerRequestSeq) {
+            clearStationMarkers();
+        }
+        console.error('Failed to load stations in radius', err);
+    }
+}
+
+function scheduleStationMarkerRefresh(immediate = false) {
+    if (immediate) {
+        refreshStationMarkers();
+        return;
+    }
+    if (radiusInputTimeout) {
+        clearTimeout(radiusInputTimeout);
+    }
+    radiusInputTimeout = setTimeout(() => {
+        refreshStationMarkers();
+    }, 300);
 }
 
 
@@ -384,6 +484,7 @@ function initMap() {
     }).addTo(leafletMap);
 
     L.control.zoom({position: 'bottomright'}).addTo(leafletMap);
+    stationMarkerLayer = L.layerGroup().addTo(leafletMap);
 
     leafletMap.on('click', (event) => {
         const {lat, lng} = event.latlng;
@@ -400,6 +501,10 @@ function initMap() {
         placeMarker(lat, lng);
         updateCoordinateSummary(lat, lng);
     });
+
+    if (latField.value && lonField.value) {
+        scheduleStationMarkerRefresh(true);
+    }
 }
 
 function formatISODate(date) {
@@ -718,6 +823,10 @@ function initRadiusSlider() {
     radiusEl.addEventListener('input', (e) => {
         const lbl = document.getElementById('radius_value');
         if (lbl) lbl.textContent = e.target.value;
+        scheduleStationMarkerRefresh();
+    });
+    radiusEl.addEventListener('change', () => {
+        scheduleStationMarkerRefresh(true);
     });
 }
 

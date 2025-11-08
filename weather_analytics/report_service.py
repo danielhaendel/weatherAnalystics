@@ -85,6 +85,11 @@ def _stations_within_radius(conn, lat: float, lon: float, radius_km: float, limi
     return payload
 
 
+def stations_within_radius(conn, lat: float, lon: float, radius_km: float, limit: int = 12) -> List[Dict]:
+    """Public helper to fetch nearby stations with distance metadata."""
+    return _stations_within_radius(conn, lat, lon, radius_km, limit)
+
+
 def _build_aggregate_query(granularity: str, station_count: int) -> str:
     if granularity == 'day':
         group_expr = 'date'
