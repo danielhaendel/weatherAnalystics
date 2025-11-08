@@ -44,8 +44,9 @@
 <body class="theme-dark min-h-screen bg-slate-950 text-slate-100 font-display antialiased">
 {% set loader_text = ui['loading_overlay'] %}{% include '_loader.html' %}
 
-<div class="relative">
-    <div class="mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 py-8 md:px-12">
+<div class="flex min-h-screen flex-col">
+    <div class="relative flex-1">
+        <div class="mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 py-8 md:px-12">
         <div class="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
             <header class="flex flex-col gap-2">
                 <p class="text-xs uppercase tracking-[0.35em] text-lime-300/80">{{ ui['header_tagline'] }}</p>
@@ -221,7 +222,21 @@
                 </section>
             </div>
         </main>
+        </div>
     </div>
+    <footer class="border-t border-white/10 bg-slate-950/80 py-6 text-sm text-slate-400">
+        <div class="mx-auto flex w-full max-w-6xl flex-col gap-2 px-6 md:flex-row md:items-center md:justify-between md:px-12">
+            <span>© {{ ui['title'] }}</span>
+            <div>
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('auth.admin') }}"
+                       class="text-slate-400 transition hover:text-lime-300">Adminbereich</a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="text-slate-400 transition hover:text-lime-300">Login</a>
+                {% endif %}
+            </div>
+        </div>
+    </footer>
 </div>
 
 <form id="report_form" method="get" action="{{ url_for('reports') }}" class="hidden">
@@ -232,20 +247,6 @@
     <input type="hidden" name="end_date">
     <input type="hidden" name="granularity">
 </form>
-
-<footer class="border-t border-white/10 bg-slate-950/80 py-6 text-sm text-slate-400">
-    <div class="mx-auto flex w-full max-w-6xl flex-col gap-2 px-6 md:flex-row md:items-center md:justify-between md:px-12">
-        <span>© {{ ui['title'] }}</span>
-        <div>
-            {% if current_user.is_authenticated %}
-                <a href="{{ url_for('auth.admin') }}"
-                   class="text-slate-400 transition hover:text-lime-300">Adminbereich</a>
-            {% else %}
-                <a href="{{ url_for('auth.login') }}" class="text-slate-400 transition hover:text-lime-300">Login</a>
-            {% endif %}
-        </div>
-    </div>
-</footer>
 
 <script>
     window.APP_I18N = {
