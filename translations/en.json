@@ -25,7 +25,6 @@
     "reports_headline": "Weather analysis",
     "reports_subheadline": "Analyse historical weather data for any address in Germany – choose radius, time span, and resolution.",
     "report_home_button": "Back to home",
-    "report_export_csv": "Export CSV",
     "report_export_xlsx": "Export Excel",
     "granularity_label": "Resolution",
     "granularity_option_daily": "Daily",

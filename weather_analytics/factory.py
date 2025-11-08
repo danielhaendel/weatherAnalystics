@@ -13,7 +13,7 @@ from flask import Flask, abort, make_response, render_template, request
 from .api import api_bp
 from .auth import auth_bp, init_auth
 from .db import ensure_database, get_db, init_app as init_db_app
-from .exporters import build_report_csv, build_report_xlsx
+from .exporters import build_report_xlsx
 from .report_service import (
     ReportError,
     generate_report,
@@ -278,8 +278,8 @@ def create_app() -> Flask:
 
     @app.get('/reports/export/<fmt>')
     def export_report(fmt: str):
-        """Download the current report as CSV or XLSX."""
-        if fmt not in {'csv', 'xlsx'}:
+        """Download the current report as XLSX."""
+        if fmt != 'xlsx':
             abort(404)
 
         required = {'lat', 'lon', 'radius', 'start_date', 'end_date', 'granularity'}
@@ -298,13 +298,6 @@ def create_app() -> Flask:
         temp_samples = payload['temp_samples']
         timestamp = dt.datetime.utcnow().strftime('%Y%m%d_%H%M%S')
         base_filename = f'weather_report_{timestamp}'
-
-        if fmt == 'csv':
-            content = build_report_csv(report, temp_samples, ui_strings)
-            response = make_response(content)
-            response.headers['Content-Type'] = 'text/csv; charset=utf-8'
-            response.headers['Content-Disposition'] = f'attachment; filename={base_filename}.csv'
-            return response
 
         content = build_report_xlsx(report, temp_samples, ui_strings)
         response = make_response(content)
