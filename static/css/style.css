@@ -668,6 +668,11 @@ body.theme-light .toast-card__message {
     transition: opacity 0.2s ease;
 }
 
+.theme-toggle__icon[data-icon="moon"] {
+    margin-right: 2px;
+    margin-top: 4px;
+}
+
 .theme-toggle.is-light {
     background: rgba(241, 245, 249, 0.92);
     border-color: rgba(15, 23, 42, 0.18);
