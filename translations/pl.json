@@ -38,6 +38,8 @@
     "reports_headline": "Analiza pogodowa",
     "reports_subheadline": "Analizuj historyczne dane pogodowe dla dowolnego miejsca w Niemczech – wybierz promień, przedział czasu i rozdzielczość.",
     "report_home_button": "Powrót na stronę główną",
+    "report_export_csv": "Eksportuj jako CSV",
+    "report_export_xlsx": "Eksportuj jako Excel",
     "granularity_label": "Rozdzielczość",
     "granularity_option_daily": "Dzienna",
     "granularity_option_monthly": "Miesięczna",

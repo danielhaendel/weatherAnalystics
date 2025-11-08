@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
+import datetime as dt
 import json
 import logging
 from pathlib import Path
 from typing import Dict, Tuple
 
-from flask import Flask, make_response, render_template, request
+from flask import Flask, abort, make_response, render_template, request
 
 from .api import api_bp
 from .auth import auth_bp, init_auth
 from .db import ensure_database, get_db, init_app as init_db_app
+from .exporters import build_report_csv, build_report_xlsx
 from .report_service import (
     ReportError,
     generate_report,
@@ -132,6 +134,64 @@ def create_app() -> Flask:
         )
         return resolved_lang, ui_strings, js_strings, current_option
 
+    def _parse_report_params(args):
+        try:
+            lat = float(args.get('lat'))
+            lon = float(args.get('lon'))
+            radius = float(args.get('radius') or 10.0)
+        except (TypeError, ValueError):
+            raise ValueError('invalid_coordinates')
+
+        start_date = args.get('start_date')
+        end_date = args.get('end_date')
+        if not start_date or not end_date:
+            raise ValueError('missing_dates')
+
+        granularity = (args.get('granularity') or 'day').lower()
+        if granularity not in {'day', 'month', 'year'}:
+            raise ValueError('invalid_granularity')
+
+        return lat, lon, radius, start_date, end_date, granularity
+
+    TEMPERATURE_SAMPLE_LIMIT = 500
+
+    def _build_report_payload(conn, lat, lon, radius, start_date, end_date, granularity, js_strings):
+        report = generate_report(conn, lat, lon, radius, start_date, end_date, granularity)
+        report['period_count'] = len(report['periods'])
+        report['station_count'] = len(report['stations'])
+
+        params = report['params']
+        params['start_date_raw'] = params.get('start_date')
+        params['end_date_raw'] = params.get('end_date')
+        params['start_date'] = format_iso_date_de(params.get('start_date'))
+        params['end_date'] = format_iso_date_de(params.get('end_date'))
+
+        for row in report['periods']:
+            row['period'] = format_period_label(row.get('period_raw') or row.get('period'), report['granularity'])
+
+        temperature_average = temp_durchschnitt_auswertung(conn, lat, lon, start_date, end_date, radius)
+        temp_samples = temperature_samples(conn, lat, lon, start_date, end_date, radius, TEMPERATURE_SAMPLE_LIMIT)
+        for sample in temp_samples:
+            sample['date_raw'] = sample.get('date')
+            sample['date'] = format_iso_date_de(sample.get('date'))
+
+        chart_data = {
+            'labels': [row['period'] for row in report['periods']],
+            'tempAvg': [row['temp_avg'] for row in report['periods']],
+            'precipitation': [row['precipitation'] for row in report['periods']],
+            'sunshine': [row['sunshine'] for row in report['periods']],
+            'labelsTemp': js_strings.get('reportsChartTemperatureLabel', 'Avg temperature'),
+            'labelsPrecip': js_strings.get('reportsChartPrecipLabel', 'Precipitation'),
+            'labelsSunshine': js_strings.get('reportsChartSunshineLabel', 'Sunshine'),
+        }
+
+        return {
+            'report': report,
+            'temperature_average': temperature_average,
+            'temp_samples': temp_samples,
+            'chart_data': chart_data,
+        }
+
     @app.get('/')
     def index():
         """Render index page with localized content."""
@@ -155,14 +215,13 @@ def create_app() -> Flask:
         return response
 
 
-    TEMPERATURE_SAMPLE_LIMIT = 500
-
     @app.get('/reports')
     def reports():
         """Render aggregated weather report."""
         resolved_lang, ui_strings, js_strings, current_option = _build_page_context()
         conn = get_db()
         coverage = get_report_coverage(conn)
+        export_query_string = request.query_string.decode('utf-8')
 
         report = None
         chart_data = None
@@ -173,32 +232,12 @@ def create_app() -> Flask:
         required = {'lat', 'lon', 'radius', 'start_date', 'end_date', 'granularity'}
         if required.issubset(request.args.keys()):
             try:
-                lat = float(request.args.get('lat'))
-                lon = float(request.args.get('lon'))
-                radius = float(request.args.get('radius') or 10.0)
-                start_date = request.args.get('start_date')
-                end_date = request.args.get('end_date')
-                granularity = (request.args.get('granularity') or 'day').lower()
-                report = generate_report(conn, lat, lon, radius, start_date, end_date, granularity)
-                report['period_count'] = len(report['periods'])
-                report['station_count'] = len(report['stations'])
-                report['params']['start_date'] = format_iso_date_de(report['params'].get('start_date'))
-                report['params']['end_date'] = format_iso_date_de(report['params'].get('end_date'))
-                for row in report['periods']:
-                    row['period'] = format_period_label(row['period'], report['granularity'])
-                temperature_average = temp_durchschnitt_auswertung(conn, lat, lon, start_date, end_date, radius)
-                temp_samples = temperature_samples(conn, lat, lon, start_date, end_date, radius, TEMPERATURE_SAMPLE_LIMIT)
-                for sample in temp_samples:
-                    sample['date'] = format_iso_date_de(sample.get('date'))
-                chart_data = {
-                    'labels': [row['period'] for row in report['periods']],
-                    'tempAvg': [row['temp_avg'] for row in report['periods']],
-                    'precipitation': [row['precipitation'] for row in report['periods']],
-                    'sunshine': [row['sunshine'] for row in report['periods']],
-                    'labelsTemp': js_strings.get('reportsChartTemperatureLabel', 'Avg temperature'),
-                    'labelsPrecip': js_strings.get('reportsChartPrecipLabel', 'Precipitation'),
-                    'labelsSunshine': js_strings.get('reportsChartSunshineLabel', 'Sunshine'),
-                }
+                lat, lon, radius, start_date, end_date, granularity = _parse_report_params(request.args)
+                payload = _build_report_payload(conn, lat, lon, radius, start_date, end_date, granularity, js_strings)
+                report = payload['report']
+                temperature_average = payload['temperature_average']
+                temp_samples = payload['temp_samples']
+                chart_data = payload['chart_data']
                 error_message = ''
             except (ValueError, ReportError) as exc:
                 if isinstance(exc, ReportError):
@@ -230,10 +269,47 @@ def create_app() -> Flask:
                 temperature_average=temperature_average,
                 temperature_samples=temp_samples,
                 temperature_sample_limit=TEMPERATURE_SAMPLE_LIMIT,
+                export_query_string=export_query_string,
             )
         )
         if request.args.get('lang', type=str) in SUPPORTED_LANGUAGES:
             response.set_cookie('lang', resolved_lang, max_age=60 * 60 * 24 * 365, samesite='Lax')
+        return response
+
+    @app.get('/reports/export/<fmt>')
+    def export_report(fmt: str):
+        """Download the current report as CSV or XLSX."""
+        if fmt not in {'csv', 'xlsx'}:
+            abort(404)
+
+        required = {'lat', 'lon', 'radius', 'start_date', 'end_date', 'granularity'}
+        if not required.issubset(request.args.keys()):
+            return make_response(('Missing report parameters', 400))
+
+        _, ui_strings, js_strings, _ = _build_page_context()
+        conn = get_db()
+        try:
+            lat, lon, radius, start_date, end_date, granularity = _parse_report_params(request.args)
+            payload = _build_report_payload(conn, lat, lon, radius, start_date, end_date, granularity, js_strings)
+        except (ValueError, ReportError):
+            return make_response(('Invalid report parameters', 400))
+
+        report = payload['report']
+        temp_samples = payload['temp_samples']
+        timestamp = dt.datetime.utcnow().strftime('%Y%m%d_%H%M%S')
+        base_filename = f'weather_report_{timestamp}'
+
+        if fmt == 'csv':
+            content = build_report_csv(report, temp_samples, ui_strings)
+            response = make_response(content)
+            response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+            response.headers['Content-Disposition'] = f'attachment; filename={base_filename}.csv'
+            return response
+
+        content = build_report_xlsx(report, temp_samples, ui_strings)
+        response = make_response(content)
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response.headers['Content-Disposition'] = f'attachment; filename={base_filename}.xlsx'
         return response
 
     return app

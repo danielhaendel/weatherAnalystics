@@ -38,6 +38,8 @@
     "reports_headline": "Análisis meteorológico",
     "reports_subheadline": "Analiza datos meteorológicos históricos para cualquier dirección en Alemania – elige radio, periodo y resolución.",
     "report_home_button": "Volver al inicio",
+    "report_export_csv": "Exportar CSV",
+    "report_export_xlsx": "Exportar Excel",
     "granularity_label": "Resolución",
     "granularity_option_daily": "Diaria",
     "granularity_option_monthly": "Mensual",
