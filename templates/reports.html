@@ -104,13 +104,90 @@
                             </thead>
                             <tbody class="divide-y divide-white/5 text-sm">
                             {% for row in report.periods %}
-                                <tr>
-                                    <td class="px-3 py-2">{{ row.period }}</td>
+                                {% set detail_id = 'period-detail-' ~ loop.index0 %}
+                                <tr class="align-middle" data-period-row>
+                                    <td class="px-3 py-2">
+                                        <button type="button"
+                                                class="flex w-full items-center gap-3 text-left text-sm font-semibold text-white"
+                                                data-period-toggle
+                                                aria-expanded="false"
+                                                aria-controls="{{ detail_id }}">
+                                            <span class="flex h-6 w-6 items-center justify-center rounded-full border border-white/20 text-xs text-white/80">
+                                                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor"
+                                                     stroke-width="2" class="h-3 w-3 transition-transform duration-200"
+                                                     data-toggle-icon>
+                                                    <path d="M7 5l6 5-6 5" stroke-linecap="round" stroke-linejoin="round"/>
+                                                </svg>
+                                            </span>
+                                            <span>{{ row.period }}</span>
+                                        </button>
+                                    </td>
                                     <td class="px-3 py-2">{{ '%.2f'|format(row.temp_avg) if row.temp_avg is not none else '—' }}</td>
                                     <td class="px-3 py-2">{{ '%.2f'|format(row.temp_min) if row.temp_min is not none else '—' }}</td>
                                     <td class="px-3 py-2">{{ '%.2f'|format(row.temp_max) if row.temp_max is not none else '—' }}</td>
                                     <td class="px-3 py-2">{{ '%.2f'|format(row.precipitation) if row.precipitation is not none else '—' }}</td>
                                     <td class="px-3 py-2">{{ '%.2f'|format(row.sunshine) if row.sunshine is not none else '—' }}</td>
+                                </tr>
+                                <tr id="{{ detail_id }}" class="hidden bg-slate-900/40" data-period-detail>
+                                    <td colspan="6" class="px-3 py-4">
+                                        <div class="rounded-2xl border border-white/5 bg-slate-950/60 p-4">
+                                            <div class="flex flex-col gap-1 text-sm text-slate-400 md:flex-row md:items-start md:justify-between">
+                                                <div>
+                                                    <p class="text-xs uppercase tracking-wide text-slate-500">
+                                                        {{ ui['report_period_details_heading'] }}
+                                                    </p>
+                                                    <p>{{ ui['report_period_details_subtitle'] }}</p>
+                                                </div>
+                                                <div class="text-xs text-slate-500 md:text-right">
+                                                    {{ ui['report_table_period'] }}: <span class="font-semibold text-slate-200">{{ row.period }}</span>
+                                                </div>
+                                            </div>
+                                            {% if row.stations %}
+                                                <div class="mt-4 overflow-x-auto">
+                                                    <table class="w-full min-w-[560px] text-left text-xs text-slate-200 md:text-sm">
+                                                        <thead>
+                                                        <tr class="text-xs uppercase text-slate-400">
+                                                            <th class="py-2 pr-4 font-semibold">{{ ui['temp_table_station'] }}</th>
+                                                            <th class="py-2 pr-4 font-semibold">{{ ui['temp_table_distance'] }}</th>
+                                                            <th class="py-2 pr-4 font-semibold">{{ ui['report_table_temp_avg'] }}</th>
+                                                            <th class="py-2 pr-4 font-semibold">{{ ui['report_table_temp_min'] }}</th>
+                                                            <th class="py-2 pr-4 font-semibold">{{ ui['report_table_temp_max'] }}</th>
+                                                            <th class="py-2 pr-4 font-semibold">{{ ui['report_table_precip'] }}</th>
+                                                            <th class="py-2 pr-4 font-semibold">{{ ui['report_table_sunshine'] }}</th>
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody class="divide-y divide-white/5">
+                                                        {% for station in row.stations %}
+                                                            <tr>
+                                                                <td class="py-3 pr-4">
+                                                                    <div class="font-semibold text-white">{{ station.station_name or ui['region_station_unknown'] }}</div>
+                                                                    <div class="text-xs text-slate-400">
+                                                                        ID {{ station.station_id }}
+                                                                        {% if station.state %}· {{ station.state }}{% endif %}
+                                                                    </div>
+                                                                </td>
+                                                                <td class="py-3 pr-4">
+                                                                    {% if station.distance_km is not none %}
+                                                                        {{ '%.2f'|format(station.distance_km) }} km
+                                                                    {% else %}
+                                                                        –
+                                                                    {% endif %}
+                                                                </td>
+                                                                <td class="py-3 pr-4">{{ '%.2f'|format(station.temp_avg) if station.temp_avg is not none else '—' }}</td>
+                                                                <td class="py-3 pr-4">{{ '%.2f'|format(station.temp_min) if station.temp_min is not none else '—' }}</td>
+                                                                <td class="py-3 pr-4">{{ '%.2f'|format(station.temp_max) if station.temp_max is not none else '—' }}</td>
+                                                                <td class="py-3 pr-4">{{ '%.2f'|format(station.precipitation) if station.precipitation is not none else '—' }}</td>
+                                                                <td class="py-3 pr-4">{{ '%.2f'|format(station.sunshine) if station.sunshine is not none else '—' }}</td>
+                                                            </tr>
+                                                        {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            {% else %}
+                                                <p class="mt-4 text-sm text-slate-400">{{ ui['report_period_details_empty'] }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </td>
                                 </tr>
                             {% endfor %}
                             </tbody>
@@ -287,6 +364,25 @@
                     },
                     plugins: {legend: {labels: {color: '#e2e8f0'}}},
                 },
+            });
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggles = document.querySelectorAll('[data-period-toggle]');
+            toggles.forEach((button) => {
+                button.addEventListener('click', () => {
+                    const targetId = button.getAttribute('aria-controls');
+                    const detailRow = targetId ? document.getElementById(targetId) : null;
+                    if (!detailRow) return;
+                    const expanded = button.getAttribute('aria-expanded') === 'true';
+                    button.setAttribute('aria-expanded', String(!expanded));
+                    detailRow.classList.toggle('hidden', expanded);
+                    const icon = button.querySelector('[data-toggle-icon]');
+                    if (icon) {
+                        icon.classList.toggle('rotate-90', !expanded);
+                    }
+                });
             });
         });
     </script>
