@@ -877,7 +877,7 @@ body.theme-light .date-range-input::placeholder {
 
 .litepicker .day-item.is-start-date,
 .litepicker .day-item.is-end-date {
-    background: linear-gradient(135deg, #bef264, #38bdf8);
+    background: linear-gradient(135deg, #bef264, #0184b6);
     box-shadow: 0 12px 30px -15px rgba(56, 189, 248, 0.5);
 }
 
@@ -895,8 +895,12 @@ body.theme-light .date-range-input::placeholder {
     border-radius: 999px;
     border: 1px solid rgba(148, 163, 184, 0.4);
     background: transparent;
-    padding: 0.2rem 0.9rem;
+    padding: 0.2rem 0.9rem !important;
     font-size: 0.85rem;
+}
+
+.litepicker .container__days .day-item.is-in-range {
+    background-color: #608d8f;
 }
 
 .litepicker .button-next,
