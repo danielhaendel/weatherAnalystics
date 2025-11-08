@@ -157,6 +157,39 @@ body.theme-light .border-red-500\/50 {
     border-color: rgba(248, 113, 113, 0.45) !important;
 }
 
+.station-marker-icon {
+    border: none !important;
+    background: transparent !important;
+    transform: translateY(-2px);
+}
+
+.station-marker-svg {
+    display: block;
+    width: 30px;
+    height: 42px;
+    filter: drop-shadow(0 10px 16px rgba(15, 23, 42, 0.45));
+}
+
+.station-marker-body {
+    fill: #facc15;
+    stroke: rgba(15, 23, 42, 0.65);
+    stroke-width: 2;
+}
+
+.station-marker-core {
+    fill: #fefce8;
+    stroke: rgba(15, 23, 42, 0.45);
+    stroke-width: 1.5;
+}
+
+body.theme-light .station-marker-body {
+    stroke: rgba(15, 23, 42, 0.35);
+}
+
+body.theme-light .station-marker-core {
+    stroke: rgba(15, 23, 42, 0.35);
+}
+
 /* Loading overlay */
 .loading-overlay {
     position: fixed;

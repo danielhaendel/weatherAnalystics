@@ -82,6 +82,13 @@ let leafletMap = null;
 let stationMarkerLayer = null;
 let stationMarkerRequestSeq = 0;
 let radiusInputTimeout = null;
+let stationMarkerIcon = null;
+const STATION_MARKER_SVG_HTML = `
+<svg class="station-marker-svg" width="30" height="42" viewBox="0 0 30 42" role="presentation" aria-hidden="true" focusable="false">
+  <path class="station-marker-body" d="M15 1C8.268 1 3 6.268 3 13c0 9.818 10.879 22.146 11.343 22.668a1.003 1.003 0 0 0 1.314 0C16.121 35.146 27 22.818 27 13 27 6.268 21.732 1 15 1z"/>
+  <circle class="station-marker-core" cx="15" cy="12.5" r="4.25"/>
+</svg>
+`;
 
 const REGION_LOADING_TEXT = TEXT.regionLoading;
 const REGION_DEFAULT_TEXT = TEXT.regionDefault;
@@ -390,23 +397,27 @@ async function refreshStationMarkers() {
         const data = await resp.json();
         if (requestId !== stationMarkerRequestSeq) return;
         clearStationMarkers();
+        const icon = getStationMarkerIcon();
         (data.stations || []).forEach((station) => {
             if (!Number.isFinite(station.latitude) || !Number.isFinite(station.longitude)) {
                 return;
             }
-            const marker = L.circleMarker(
-                [station.latitude, station.longitude],
-                {
-                    radius: 6,
-                    color: '#facc15',
-                    weight: 1,
-                    fillColor: '#fef08a',
-                    fillOpacity: 0.85,
-                },
-            );
+            const marker = icon
+                ? L.marker([station.latitude, station.longitude], { icon, keyboard: false })
+                : L.circleMarker(
+                    [station.latitude, station.longitude],
+                    {
+                        radius: 6,
+                        color: '#facc15',
+                        weight: 1,
+                        fillColor: '#fef08a',
+                        fillOpacity: 0.85,
+                    },
+                );
+            const tooltipOffset = icon ? [0, -30] : [0, -6];
             marker.bindTooltip(buildStationTooltip(station), {
                 direction: 'top',
-                offset: [0, -6],
+                offset: tooltipOffset,
                 opacity: 0.9,
                 sticky: true,
             });
@@ -1091,4 +1102,17 @@ function showToast(options) {
   const { card, removeToast } = createToastNode(options);
   toastContainer.appendChild(card);
   return removeToast;
+}
+function getStationMarkerIcon() {
+    if (stationMarkerIcon) return stationMarkerIcon;
+    if (typeof L === 'undefined') return null;
+    stationMarkerIcon = L.divIcon({
+        className: 'station-marker-icon',
+        html: STATION_MARKER_SVG_HTML,
+        iconSize: [30, 42],
+        iconAnchor: [15, 38],
+        popupAnchor: [0, -34],
+        tooltipAnchor: [0, -34],
+    });
+    return stationMarkerIcon;
 }
