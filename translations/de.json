@@ -24,6 +24,7 @@
     "radius_max": "50 km",
     "reports_headline": "Wetterauswertung",
     "reports_subheadline": "Analysiere historische Wetterdaten für jeden Ort in Deutschland – wähle Zeitraum, Radius und Auflösung für deine Auswertung.",
+    "report_home_button": "Zur Startseite",
     "granularity_label": "Auflösung",
     "granularity_option_daily": "Tagesbasis",
     "granularity_option_monthly": "Monatsbasis",
