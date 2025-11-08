@@ -8,7 +8,7 @@ import logging
 from pathlib import Path
 from typing import Dict, Tuple
 
-from flask import Flask, abort, make_response, render_template, request
+from flask import Flask, abort, make_response, render_template, request, url_for
 
 from .api import api_bp
 from .auth import auth_bp, init_auth
@@ -28,6 +28,7 @@ PROJECT_ROOT = PACKAGE_ROOT.parent
 TRANSLATIONS_DIR = PROJECT_ROOT / 'translations'
 TEMPLATES_DIR = PROJECT_ROOT / 'templates'
 FALLBACK_LANGUAGE = 'de'
+OPENAPI_SPEC_PATH = PROJECT_ROOT / 'openapi.json'
 
 
 def load_translations(directory: Path, preferred_default: str) -> Tuple[Dict[str, Dict], Tuple[str, ...], str]:
@@ -304,5 +305,17 @@ def create_app() -> Flask:
         response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         response.headers['Content-Disposition'] = f'attachment; filename={base_filename}.xlsx'
         return response
+
+    @app.get('/openapi.json')
+    def openapi_spec():
+        if not OPENAPI_SPEC_PATH.exists():
+            abort(404)
+        with OPENAPI_SPEC_PATH.open('r', encoding='utf-8') as handle:
+            spec_data = json.load(handle)
+        return app.response_class(json.dumps(spec_data), mimetype='application/json')
+
+    @app.get('/docs')
+    def swagger_docs():
+        return render_template('swagger.html', spec_url=url_for('openapi_spec'))
 
     return app

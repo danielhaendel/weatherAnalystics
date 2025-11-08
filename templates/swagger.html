@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Weather Analytics API Docs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.11.4/swagger-ui.css">
+    <style>
+        :root {
+            color-scheme: light;
+        }
+        body {
+            margin: 0;
+            background: #f8fafc;
+        }
+        #swagger-ui {
+            background: #ffffff;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .swagger-ui .topbar {
+            background-color: #ffffff;
+            box-shadow: 0 2px 12px rgba(15, 23, 42, 0.08);
+        }
+        .swagger-ui .topbar a,
+        .swagger-ui .topbar .download-url-wrapper {
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body>
+<div id="swagger-ui"></div>
+<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.11.4/swagger-ui-bundle.js"></script>
+<script>
+    window.addEventListener('load', function () {
+        SwaggerUIBundle({
+            url: "{{ spec_url }}",
+            dom_id: '#swagger-ui',
+            docExpansion: 'none',
+            presets: [SwaggerUIBundle.presets.apis],
+        });
+    });
+</script>
+</body>
+</html>

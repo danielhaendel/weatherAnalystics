@@ -1,0 +1,17 @@
+meta {
+  name: Reverse geocode coordinates
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/reverse_geocode?lat=51.505589&lon=7.269625
+  body: none
+  auth: inherit
+}
+
+params:query {
+  lat: 51.505589
+  lon: 7.269625
+  ~lang: 
+}

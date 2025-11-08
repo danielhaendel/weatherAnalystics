@@ -1,0 +1,22 @@
+meta {
+  name: Generate an aggregated weather report
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/reports/aggregate
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "lat": 52.52,
+    "lon": 13.405,
+    "radius": 35,
+    "start_date": "2022-07-01",
+    "end_date": "2022-07-31",
+    "granularity": "day"
+  }
+}

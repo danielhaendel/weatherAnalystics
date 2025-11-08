@@ -1,0 +1,17 @@
+meta {
+  name: Autocomplete places
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/places
+  body: none
+  auth: inherit
+}
+
+params:query {
+  q: Bochum
+  country: de
+  lang: de
+}

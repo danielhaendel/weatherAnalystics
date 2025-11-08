@@ -1,0 +1,18 @@
+meta {
+  name: List stations near a coordinate
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/stations_in_radius
+  body: none
+  auth: inherit
+}
+
+params:query {
+  lat: 52.52
+  lon: 13.405
+  radius: 35
+  limit: 25
+}

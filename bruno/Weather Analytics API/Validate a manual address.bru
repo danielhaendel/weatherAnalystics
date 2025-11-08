@@ -1,0 +1,15 @@
+meta {
+  name: Validate a manual address
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/validate_address
+  body: none
+  auth: inherit
+}
+
+params:query {
+  q: Ostring 25, 44787 Bochum
+}

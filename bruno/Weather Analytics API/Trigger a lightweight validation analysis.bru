@@ -1,0 +1,22 @@
+meta {
+  name: Trigger a lightweight validation analysis
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/analyze
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "lat": 52.52,
+    "lon": 13.405,
+    "country_code": "de",
+    "start_date": "2022-07-01",
+    "end_date": "2022-07-31",
+    "lang": "de"
+  }
+}

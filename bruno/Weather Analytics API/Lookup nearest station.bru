@@ -1,0 +1,16 @@
+meta {
+  name: Lookup nearest station
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/stations/nearest
+  body: none
+  auth: inherit
+}
+
+params:query {
+  lat: 52.52
+  lon: 13.405
+}

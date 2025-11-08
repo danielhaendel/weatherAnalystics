@@ -102,3 +102,14 @@ cp .env.example .env
 ```bash
 pytest -q
 ```
+
+---
+
+## API-Test mit Bruno
+
+Zur schnellen Überprüfung der REST-Endpunkte liegt eine Bruno-Collection unter `bruno/WeatherAnalytics` bereit:
+
+1. Bruno installieren und starten.
+2. Über **Open Collection** das Verzeichnis `bruno/WeatherAnalytics` auswählen.
+3. Die vorkonfigurierte Umgebung `local` erwartet einen lokal laufenden Flask-Server (`http://localhost:5000`) und nutzt Beispielwerte für Berlin. Passe bei Bedarf die Variablen in `bruno/WeatherAnalytics/environments/local.bru` an.
+4. Die Requests (Coverage, Stations in Radius, Nearest Station, Aggregate Report, Analyze) enthalten Beispielpayloads und können sofort abgesetzt werden, solange im Hintergrund der Flask-Server läuft.
