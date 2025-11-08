@@ -243,8 +243,15 @@ def generate_report(conn, lat: float, lon: float, radius: float,
         })
 
     breakdown = _station_period_breakdown(conn, stations, start_date, end_date, granularity)
+    used_station_ids = set()
     for row in periods:
-        row['stations'] = breakdown.get(row['period'], [])
+        station_details = breakdown.get(row['period_raw'], [])
+        row['stations'] = station_details
+        for detail in station_details:
+            used_station_ids.add(detail['station_id'])
+
+    for station in stations:
+        station['has_data'] = station['station_id'] in used_station_ids
 
     return {
         'params': {
@@ -259,6 +266,8 @@ def generate_report(conn, lat: float, lon: float, radius: float,
         'stations': stations,
         'periods': periods,
         'granularity': granularity,
+        'used_station_ids': sorted(used_station_ids),
+        'used_station_count': len(used_station_ids),
     }
 
 

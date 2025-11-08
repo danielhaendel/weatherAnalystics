@@ -70,10 +70,17 @@
                     </div>
                     <div class="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
                         <p class="text-xs uppercase tracking-wide text-slate-500">{{ ui['report_stations_heading'] }}</p>
-                        <p class="mt-2 text-lg font-semibold text-white">{{ report.period_count }}
-                            × {{ report.station_count }}</p>
-                        <p class="text-xs text-slate-500">{{ ui['report_table_period'] }}
-                            · {{ ui['report_stations_heading'] }}</p>
+                        <div class="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <p class="text-xs uppercase tracking-wide text-slate-500">{{ ui['report_station_usage_found'] }}</p>
+                                <p class="mt-1 text-2xl font-semibold text-white">{{ report.station_count }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs uppercase tracking-wide text-slate-500">{{ ui['report_station_usage_used'] }}</p>
+                                <p class="mt-1 text-2xl font-semibold text-white">{{ report.used_station_count or 0 }}</p>
+                            </div>
+                        </div>
+                        <p class="mt-3 text-xs text-slate-500">{{ ui['report_station_usage_caption'] }}</p>
                     </div>
                 </section>
 
@@ -87,8 +94,20 @@
                 </section>
 
                 <section class="rounded-3xl border border-white/10 bg-slate-900/60 p-6">
-                    <div class="flex items-center justify-between gap-3">
-                        <h2 class="text-lg font-semibold text-white">{{ ui['report_table_title'] }}</h2>
+                    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <h2 class="text-lg font-semibold text-white">{{ ui['report_table_title'] }}</h2>
+                        </div>
+                        <div class="text-left md:text-right">
+                            <p class="text-xs uppercase tracking-wide text-slate-500">{{ ui['temp_table_average_label'] }}</p>
+                            <p class="mt-2 text-3xl font-semibold text-white">
+                                {% if temperature_average is not none %}
+                                    {{ '%.2f'|format(temperature_average) }} °C
+                                {% else %}
+                                    --
+                                {% endif %}
+                            </p>
+                        </div>
                     </div>
                     <div class="mt-4 overflow-x-auto">
                         <table class="w-full min-w-[640px] text-left text-sm text-slate-100">
@@ -116,7 +135,8 @@
                                                 <svg viewBox="0 0 20 20" fill="none" stroke="currentColor"
                                                      stroke-width="2" class="h-3 w-3 transition-transform duration-200"
                                                      data-toggle-icon>
-                                                    <path d="M7 5l6 5-6 5" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    <path d="M7 5l6 5-6 5" stroke-linecap="round"
+                                                          stroke-linejoin="round"/>
                                                 </svg>
                                             </span>
                                             <span>{{ row.period }}</span>
@@ -139,7 +159,8 @@
                                                     <p>{{ ui['report_period_details_subtitle'] }}</p>
                                                 </div>
                                                 <div class="text-xs text-slate-500 md:text-right">
-                                                    {{ ui['report_table_period'] }}: <span class="font-semibold text-slate-200">{{ row.period }}</span>
+                                                    {{ ui['report_table_period'] }}: <span
+                                                        class="font-semibold text-slate-200">{{ row.period }}</span>
                                                 </div>
                                             </div>
                                             {% if row.stations %}
@@ -163,7 +184,8 @@
                                                                     <div class="font-semibold text-white">{{ station.station_name or ui['region_station_unknown'] }}</div>
                                                                     <div class="text-xs text-slate-400">
                                                                         ID {{ station.station_id }}
-                                                                        {% if station.state %}· {{ station.state }}{% endif %}
+                                                                        {% if station.state %}·
+                                                                            {{ station.state }}{% endif %}
                                                                     </div>
                                                                 </td>
                                                                 <td class="py-3 pr-4">
@@ -196,83 +218,23 @@
                 </section>
 
                 <section class="rounded-3xl border border-white/10 bg-slate-900/60 p-6">
-                    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <h2 class="text-lg font-semibold text-white">{{ ui['temp_table_heading'] }}</h2>
-                            <p class="text-sm text-slate-400">{{ ui['temp_table_description'] }}</p>
-                        </div>
-                        <div class="text-left md:text-right">
-                            <p class="text-xs uppercase tracking-wide text-slate-500">{{ ui['temp_table_average_label'] }}</p>
-                            <p class="mt-2 text-3xl font-semibold text-white">
-                                {% if temperature_average is not none %}
-                                    {{ '%.2f'|format(temperature_average) }} °C
-                                {% else %}
-                                    --
-                                {% endif %}
-                            </p>
-                        </div>
-                    </div>
-
-                    {% if temperature_samples %}
-                        <p class="mt-4 text-xs uppercase tracking-wide text-slate-500">
-                            {{ ui['temp_table_limit_hint'].replace('{count}', temperature_sample_limit|string) }}
-                        </p>
-                        <div class="mt-3 overflow-x-auto">
-                            <table class="w-full min-w-[640px] text-left text-sm text-slate-100">
-                                <thead>
-                                <tr class="text-xs uppercase text-slate-400">
-                                    <th class="py-2 pr-4 font-semibold">{{ ui['temp_table_date'] }}</th>
-                                    <th class="py-2 pr-4 font-semibold">{{ ui['temp_table_station'] }}</th>
-                                    <th class="py-2 pr-4 font-semibold">{{ ui['temp_table_distance'] }}</th>
-                                    <th class="py-2 pr-4 font-semibold text-right">{{ ui['temp_table_temperature'] }}</th>
-                                </tr>
-                                </thead>
-                                <tbody class="divide-y divide-white/5">
-                                {% for sample in temperature_samples %}
-                                    <tr class="align-top">
-                                        <td class="py-3 pr-4 text-slate-200">{{ sample.date }}</td>
-                                        <td class="py-3 pr-4">
-                                            <div class="font-semibold text-white">{{ sample.station_name or ui['region_station_unknown'] }}</div>
-                                            <div class="text-xs text-slate-400">
-                                                ID {{ sample.station_id }}
-                                                {% if sample.state %}· {{ sample.state }}{% endif %}
-                                            </div>
-                                        </td>
-                                        <td class="py-3 pr-4">
-                                            {% if sample.distance_km is not none %}
-                                                {{ '%.2f'|format(sample.distance_km) }} km
-                                            {% else %}
-                                                –
-                                            {% endif %}
-                                        </td>
-                                        <td class="py-3 pl-4 text-right font-semibold text-white">
-                                            {% if sample.temperature is not none %}
-                                                {{ '%.2f'|format(sample.temperature) }} °C
-                                            {% else %}
-                                                –
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <p class="mt-4 text-sm text-slate-400">{{ ui['temp_table_empty'] }}</p>
-                    {% endif %}
-                </section>
-
-                <section class="rounded-3xl border border-white/10 bg-slate-900/60 p-6">
                     <h2 class="text-lg font-semibold text-white">{{ ui['report_stations_heading'] }}</h2>
                     <ul class="mt-4 space-y-2 text-sm text-slate-200">
                         {% for station in report.stations %}
                             <li class="rounded-xl border border-white/5 bg-white/5 px-3 py-2">
-                                {{ station.name or station.station_id }}
-                                {% if station.state %} · {{ station.state }}{% endif %}
-                                {% if station.distance_km is not none %}
-                                    ·
-                                    {{ ui['report_station_distance'].replace('{distance}', ('%.2f'|format(station.distance_km))) }}
-                                {% endif %}
+                                <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                    <div class="text-sm">
+                                        {{ station.name or station.station_id }}
+                                        {% if station.state %} · {{ station.state }}{% endif %}
+                                        {% if station.distance_km is not none %}
+                                            ·
+                                            {{ ui['report_station_distance'].replace('{distance}', ('%.2f'|format(station.distance_km))) }}
+                                        {% endif %}
+                                    </div>
+                                    <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold {{ 'bg-lime-400/20 text-lime-200 border border-lime-300/40' if station.has_data else 'bg-slate-700/40 text-slate-300 border border-white/10' }}">
+                                        {{ ui['report_station_badge_used'] if station.has_data else ui['report_station_badge_unused'] }}
+                                    </span>
+                                </div>
                             </li>
                         {% endfor %}
                     </ul>
