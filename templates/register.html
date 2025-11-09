@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="utf-8">
-    <title>Login | Weather Analytics</title>
+    <title>Registrierung | Weather Analytics</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,27 +18,15 @@
     </style>
 </head>
 <body class="theme-dark min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
-<div class="absolute right-6 top-6">
+<div class="absolute right-6 top-6 flex flex-col items-end gap-3">
     {% include '_language_theme_controls.html' %}
+    <a href="{{ url_for('auth.login') }}" class="header-link text-sm">Schon registriert? Anmelden</a>
 </div>
 <div class="w-full max-w-md space-y-6">
     <div class="text-center space-y-2">
-        <h1 class="text-2xl font-semibold">Login</h1>
-        <p class="text-sm text-slate-400">Bitte melden Sie sich mit Ihren Zugangsdaten an.</p>
+        <h1 class="text-2xl font-semibold">Konto erstellen</h1>
+        <p class="text-sm text-slate-400">Lege ein persönliches Konto für API-Zugriffe an.</p>
     </div>
-
-    {% with messages = get_flashed_messages(with_categories=True) %}
-        {% if messages %}
-            <div class="space-y-2">
-                {% for category, message in messages %}
-                    <div class="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-100">
-                        <strong class="block capitalize">{{ category }}</strong>
-                        <span>{{ message }}</span>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
 
     {% if error %}
         <div class="rounded-lg border border-red-500/60 bg-red-500/10 px-4 py-3 text-sm text-red-200">
@@ -54,20 +42,19 @@
         </div>
         <div>
             <label for="password" class="block text-sm font-medium text-slate-300">Passwort</label>
-            <input id="password" name="password" type="password" required autocomplete="current-password"
+            <input id="password" name="password" type="password" required autocomplete="new-password"
+                   class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40">
+        </div>
+        <div>
+            <label for="confirm_password" class="block text-sm font-medium text-slate-300">Passwort bestätigen</label>
+            <input id="confirm_password" name="confirm_password" type="password" required autocomplete="new-password"
                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40">
         </div>
         <button type="submit"
                 class="w-full rounded-xl bg-gradient-to-r from-lime-400 via-emerald-400 to-sky-400 px-4 py-2 text-slate-950 font-semibold transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-lime-300/50">
-            Anmelden
+            Registrieren
         </button>
     </form>
-    <div class="text-center space-y-2 text-sm">
-        <a href="{{ url_for('index') }}" class="header-link">Zurück zur Startseite</a>
-        <p class="text-slate-400">Noch kein Konto?
-            <a href="{{ url_for('auth.register') }}" class="header-link">Jetzt registrieren</a>
-        </p>
-    </div>
 </div>
 {% include '_app_i18n_context.html' %}
 <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>

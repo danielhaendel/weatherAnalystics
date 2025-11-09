@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="utf-8">
-    <title>Adminbereich | Weather Analytics</title>
+    <title>Einstellungen | Weather Analytics</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,7 +22,7 @@
 <header class="border-b border-white/10 bg-slate-900/80">
     <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <div>
-            <p class="header-tagline text-xs uppercase tracking-[0.35em]">Adminbereich</p>
+            <p class="header-tagline text-xs uppercase tracking-[0.35em]">Einstellungen</p>
             <h1 class="text-2xl font-semibold">Hallo, {{ current_user.username }}</h1>
         </div>
         <div class="flex flex-wrap items-center gap-3 justify-end">
@@ -40,15 +40,14 @@
 <main class="mx-auto flex w-full max-w-6xl flex-1 gap-8 px-6 py-10 pb-16 min-h-[calc(100vh-160px)]">
     <aside class="w-full max-w-xs rounded-2xl border border-white/10 bg-slate-900/70 p-6">
         <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Navigation</p>
+{% set section_labels = {'data': 'Daten aktualisieren', 'password': 'Passwort ändern', 'api_keys': 'API-Keys'} %}
         <nav class="mt-4 flex flex-col gap-1 text-sm">
-            <a href="{{ url_for('auth.admin', section='data') }}"
-               class="flex items-center justify-between rounded-xl px-4 py-3 transition {{ 'bg-white/5 text-white border border-white/15' if active_section == 'data' else 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent' }}">
-                <span>Daten aktualisieren</span>
-            </a>
-            <a href="{{ url_for('auth.admin', section='password') }}"
-               class="flex items-center justify-between rounded-xl px-4 py-3 transition {{ 'bg-white/5 text-white border border-white/15' if active_section == 'password' else 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent' }}">
-                <span>Passwort ändern</span>
-            </a>
+            {% for sec in available_sections %}
+                <a href="{{ url_for('auth.admin', section=sec) }}"
+                   class="flex items-center justify-between rounded-xl px-4 py-3 transition {{ 'bg-white/5 text-white border border-white/15' if active_section == sec else 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent' }}">
+                    <span>{{ section_labels[sec] }}</span>
+                </a>
+            {% endfor %}
         </nav>
     </aside>
 
@@ -88,7 +87,84 @@
                     </button>
                 </form>
             </div>
-        {% else %}
+        {% elif active_section == 'api_keys' %}
+            {% if not current_user.is_admin %}
+            <div class="flex h-full flex-col rounded-2xl border border-white/10 bg-slate-900/70 p-6 min-h-[calc(100vh-220px)] pb-10">
+                <h2 class="text-xl font-semibold text-white">API-Keys</h2>
+                <p class="mt-1 text-sm text-slate-400">Verwalte persönliche API-Schlüssel, um die Daten programmgesteuert abzurufen.</p>
+                {% if new_api_key %}
+                    <div class="mt-4 rounded-2xl border border-lime-300/40 bg-white/10 p-4 text-sm text-white">
+                        <p class="font-semibold">Neuer API-Key</p>
+                        <p class="mt-1 text-xs text-slate-300">Speichere den Schlüssel jetzt – er wird später nicht mehr angezeigt.</p>
+                        <code class="mt-2 block select-all rounded-xl bg-black/30 px-3 py-2 text-sm tracking-wide">{{ new_api_key }}</code>
+                    </div>
+                {% endif %}
+                <form method="post" action="{{ url_for('auth.create_api_key') }}" class="mt-6 space-y-4" data-show-loader="true">
+                    <div>
+                        <label for="api_key_name" class="block text-sm font-medium text-slate-300">Bezeichnung</label>
+                        <input id="api_key_name" name="name" type="text" required placeholder="z. B. Interner Client"
+                               class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40">
+                    </div>
+                    <div>
+                        <label for="expires_in" class="block text-sm font-medium text-slate-300">Laufzeit (Tage, max. 360)</label>
+                        <input id="expires_in" name="expires_in" type="number" min="1" max="360" value="90"
+                               class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40">
+                    </div>
+                    <button type="submit"
+                            class="w-full rounded-xl bg-gradient-to-r from-sky-400 via-cyan-400 to-lime-400 px-4 py-2 text-slate-950 font-semibold transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-cyan-300/50">
+                        API-Key erstellen
+                    </button>
+                </form>
+                <div class="mt-6 flex-1">
+                    {% if api_keys %}
+                        <div class="overflow-x-auto rounded-2xl border border-white/5 bg-white/5">
+                            <table class="w-full min-w-[520px] text-left text-sm">
+                                <thead class="text-xs uppercase text-slate-400">
+                                <tr>
+                                    <th class="px-4 py-3">Name</th>
+                                    <th class="px-4 py-3">Key</th>
+                                    <th class="px-4 py-3">Erstellt</th>
+                                    <th class="px-4 py-3">Ablauf</th>
+                                    <th class="px-4 py-3 text-right">Aktionen</th>
+                                </tr>
+                                </thead>
+                                <tbody class="divide-y divide-white/10 text-slate-100">
+                                {% for key in api_keys %}
+                                    {% set expired = api_key_now and key['expires_at'] <= api_key_now %}
+                                    <tr>
+                                        <td class="px-4 py-3 font-semibold">{{ key['name'] }}</td>
+                                        <td class="px-4 py-3">
+                                            <code class="rounded bg-black/30 px-2 py-1 text-xs tracking-wide">{{ key['api_key'] }}</code>
+                                        </td>
+                                        <td class="px-4 py-3 text-sm text-slate-300">{{ key['created_at'] }}</td>
+                                        <td class="px-4 py-3 text-sm {{ 'text-red-300' if expired else 'text-slate-300' }}">{{ key['expires_at'] }}</td>
+                                        <td class="px-4 py-3 text-right">
+                                            <form method="post" action="{{ url_for('auth.delete_api_key', key_id=key['id']) }}"
+                                                  onsubmit="return confirm('API-Key wirklich löschen?');">
+                                                <button type="submit"
+                                                        class="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-slate-200 transition hover:border-red-400 hover:text-red-200">
+                                                    Löschen
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="mt-4 text-sm text-slate-400">Noch keine API-Keys vorhanden.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="rounded-2xl border border-white/10 bg-slate-900/70 p-6">
+                <h2 class="text-xl font-semibold text-white">Nur für Nutzer</h2>
+                <p class="mt-1 text-sm text-slate-400">API-Keys stehen nur normalen Benutzerkonten zur Verfügung.</p>
+            </div>
+            {% endif %}
+        {% elif active_section == 'data' %}
+            {% if current_user.is_admin %}
             <div class="flex h-full flex-col rounded-2xl border border-white/10 bg-slate-900/70 p-6 min-h-[calc(100vh-220px)] pb-10">
                 <h2 class="text-xl font-semibold text-white">Daten aktualisieren</h2>
                 <p class="mt-1 text-sm text-slate-400">Führen Sie manuelle Aktualisierungen der importierten DWD-Daten
@@ -121,6 +197,12 @@
                     </form>
                 </div>
             </div>
+            {% else %}
+            <div class="rounded-2xl border border-white/10 bg-slate-900/70 p-6">
+                <h2 class="text-xl font-semibold text-white">Keine Berechtigung</h2>
+                <p class="mt-1 text-sm text-slate-400">Nur Administratoren können Datenaktualisierungen starten.</p>
+            </div>
+            {% endif %}
         {% endif %}
     </section>
 </main>

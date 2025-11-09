@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import secrets
 from typing import Optional
 from urllib.parse import urljoin, urlparse
 
@@ -14,6 +15,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    session,
     url_for,
 )
 from flask_login import (
@@ -44,26 +46,58 @@ USER_SCHEMA = (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
+        is_admin INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
     )
     """,
 )
 
+API_KEY_SCHEMA = (
+    """
+    CREATE TABLE IF NOT EXISTS api_keys (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        api_key TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id)
+    """,
+)
+
+USER_REQUIRED_COLUMNS = (
+    ('is_admin', 'INTEGER NOT NULL DEFAULT 0'),
+)
+
+
+def _row_is_admin(row) -> int:
+    if row is None:
+        return 0
+    try:
+        return row['is_admin']
+    except (KeyError, IndexError, TypeError):
+        return 0
+
 
 class User(UserMixin):
     """Lightweight user wrapper that works with Flask-Login."""
 
-    def __init__(self, user_id: int, username: str, password_hash: str) -> None:
+    def __init__(self, user_id: int, username: str, password_hash: str, is_admin: int) -> None:
         self.id = str(user_id)
         self.username = username
         self.password_hash = password_hash
+        self.is_admin = bool(is_admin)
 
     @classmethod
     def from_row(cls, row) -> Optional['User']:
         if row is None:
             return None
-        return cls(row['id'], row['username'], row['password_hash'])
+        return cls(row['id'], row['username'], row['password_hash'], _row_is_admin(row))
 
     @classmethod
     def get_by_id(cls, user_id: str) -> Optional['User']:
@@ -112,6 +146,16 @@ def is_safe_redirect(target: Optional[str]) -> bool:
     )
 
 
+def ensure_user_columns() -> None:
+    conn = get_db()
+    existing = {row['name'] for row in conn.execute('PRAGMA table_info(users)')}
+    missing = [(column, col_type) for column, col_type in USER_REQUIRED_COLUMNS if column not in existing]
+    for column, col_type in missing:
+        conn.execute(f'ALTER TABLE users ADD COLUMN {column} {col_type}')
+    if missing:
+        conn.commit()
+
+
 def ensure_default_admin() -> None:
     conn = get_db()
     now = dt.datetime.utcnow().isoformat(timespec='seconds')
@@ -122,15 +166,34 @@ def ensure_default_admin() -> None:
         ).fetchone()
         if row is None:
             conn.execute(
-                'INSERT INTO users (username, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?)',
-                ('admin', generate_password_hash('admin'), now, now),
+                'INSERT INTO users (username, password_hash, is_admin, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+                ('admin', generate_password_hash('admin'), 1, now, now),
             )
+        else:
+            conn.execute(
+                'UPDATE users SET is_admin = 1 WHERE username = ? AND (is_admin IS NULL OR is_admin = 0)',
+                ('admin',),
+            )
+
+
+def get_api_keys_for_user(user_id: int):
+    conn = get_db()
+    return conn.execute(
+        '''
+        SELECT id, name, api_key, created_at, expires_at
+        FROM api_keys
+        WHERE user_id = ?
+        ORDER BY datetime(created_at) DESC
+        ''',
+        (user_id,),
+    ).fetchall()
 
 
 def init_auth(app) -> None:
     login_manager.init_app(app)
     with app.app_context():
-        execute_script(USER_SCHEMA)
+        execute_script((*USER_SCHEMA, *API_KEY_SCHEMA))
+        ensure_user_columns()
         ensure_default_admin()
 
 
@@ -157,6 +220,42 @@ def login():
     return render_template('login.html', error=error)
 
 
+@auth_bp.route('/register', methods=('GET', 'POST'))
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('auth.admin'))
+
+    error: Optional[str] = None
+    if request.method == 'POST':
+        username = (request.form.get('username') or '').strip()
+        password = request.form.get('password') or ''
+        confirm = request.form.get('confirm_password') or ''
+        if not username:
+            error = 'Benutzername darf nicht leer sein.'
+        elif not password:
+            error = 'Passwort darf nicht leer sein.'
+        elif password != confirm:
+            error = 'Passwörter stimmen nicht überein.'
+        elif User.get_by_username(username):
+            error = 'Benutzername ist bereits vergeben.'
+        else:
+            conn = get_db()
+            now = dt.datetime.utcnow().isoformat(timespec='seconds')
+            with conn:
+                conn.execute(
+                    'INSERT INTO users (username, password_hash, is_admin, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
+                    (username, generate_password_hash(password), 0, now, now),
+                )
+            user = User.get_by_username(username)
+            if user:
+                login_user(user)
+                flash('Konto erstellt.', 'success')
+                return redirect(url_for('auth.admin'))
+            error = 'Registrierung fehlgeschlagen.'
+
+    return render_template('register.html', error=error)
+
+
 @auth_bp.post('/logout')
 @login_required
 def logout():
@@ -168,15 +267,35 @@ def logout():
 @auth_bp.get('/admin')
 @login_required
 def admin():
-    section = request.args.get('section', 'data')
-    if section not in {'data', 'password'}:
-        section = 'data'
-    return render_template('admin.html', active_section=section)
+    sections = ['password']
+    if current_user.is_admin:
+        sections.insert(0, 'data')
+    else:
+        sections.insert(0, 'api_keys')
+    requested = request.args.get('section') or sections[0]
+    if requested not in sections:
+        requested = sections[0]
+    api_keys = []
+    api_key_now = None
+    if requested == 'api_keys':
+        api_keys = get_api_keys_for_user(int(current_user.id))
+        api_key_now = dt.datetime.utcnow().isoformat(timespec='seconds')
+    new_api_key = session.pop('new_api_key_value', None)
+    return render_template(
+        'settings.html',
+        active_section=requested,
+        available_sections=sections,
+        api_keys=api_keys,
+        api_key_now=api_key_now,
+        new_api_key=new_api_key,
+    )
 
 
 @auth_bp.post('/admin/import/start')
 @login_required
 def admin_import_start():
+    if not current_user.is_admin:
+        return jsonify({'ok': False, 'error': 'forbidden'}), 403
     payload = request.get_json(silent=True) or {}
     kind = (payload.get('kind') or '').strip().lower()
     if kind not in {'stations', 'weather'}:
@@ -193,6 +312,8 @@ def admin_import_start():
 @auth_bp.get('/admin/import/<job_id>')
 @login_required
 def admin_import_status(job_id: str):
+    if not current_user.is_admin:
+        return jsonify({'ok': False, 'error': 'forbidden'}), 403
     job = get_job(job_id)
     if job is None:
         return jsonify({'ok': False, 'error': 'job_not_found'}), 404
@@ -222,9 +343,54 @@ def change_password():
     return redirect(url_for('auth.admin', section='password'))
 
 
+@auth_bp.post('/admin/api-keys/create')
+@login_required
+def create_api_key():
+    name = (request.form.get('name') or '').strip() or 'API-Key'
+    try:
+        days = int(request.form.get('expires_in') or 90)
+    except (TypeError, ValueError):
+        days = 90
+    days = max(1, min(360, days))
+    now = dt.datetime.utcnow()
+    expires_at = (now + dt.timedelta(days=days)).isoformat(timespec='seconds')
+    key_value = secrets.token_urlsafe(32)
+    conn = get_db()
+    with conn:
+        conn.execute(
+            '''
+            INSERT INTO api_keys (user_id, name, api_key, created_at, expires_at)
+            VALUES (?, ?, ?, ?, ?)
+            ''',
+            (int(current_user.id), name, key_value, now.isoformat(timespec='seconds'), expires_at),
+        )
+    session['new_api_key_value'] = key_value
+    flash('API-Key erstellt.', 'success')
+    return redirect(url_for('auth.admin', section='api_keys'))
+
+
+@auth_bp.post('/admin/api-keys/<int:key_id>/delete')
+@login_required
+def delete_api_key(key_id: int):
+    conn = get_db()
+    with conn:
+        cur = conn.execute(
+            'DELETE FROM api_keys WHERE id = ? AND user_id = ?',
+            (key_id, int(current_user.id)),
+        )
+    if cur.rowcount:
+        flash('API-Key gelöscht.', 'success')
+    else:
+        flash('API-Key konnte nicht gelöscht werden.', 'error')
+    return redirect(url_for('auth.admin', section='api_keys'))
+
+
 @auth_bp.post('/admin/sync-stations')
 @login_required
 def sync_stations_admin():
+    if not current_user.is_admin:
+        flash('Keine Berechtigung.', 'error')
+        return redirect(url_for('auth.admin', section='api_keys'))
     try:
         stats = import_station_metadata(current_app)
     except Exception as exc:  # pragma: no cover - defensive
@@ -245,6 +411,9 @@ def sync_stations_admin():
 @auth_bp.post('/admin/sync-weather')
 @login_required
 def sync_weather_admin():
+    if not current_user.is_admin:
+        flash('Keine Berechtigung.', 'error')
+        return redirect(url_for('auth.admin', section='api_keys'))
     try:
         report = import_full_history(current_app)
     except Exception as exc:  # pragma: no cover - defensive

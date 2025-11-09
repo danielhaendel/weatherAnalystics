@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/api/places
+  url: {{baseUrl}}/api/places?q=Bochum&country=de
   body: none
   auth: inherit
 }
@@ -13,5 +13,5 @@ get {
 params:query {
   q: Bochum
   country: de
-  lang: de
+  ~lang: de
 }
