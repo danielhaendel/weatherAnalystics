@@ -283,11 +283,8 @@
         <span>© {{ ui['title'] }}</span>
         <div class="flex items-center gap-3">
             <a href="{{ url_for('index') }}" class="site-footer__link">{{ ui['brand'] }}</a>
-            {% if current_user.is_authenticated %}
-                <a href="{{ url_for('auth.admin') }}" class="site-footer__link">Einstellungen</a>
-            {% else %}
-                <a href="{{ url_for('auth.login') }}" class="site-footer__link">Login</a>
-            {% endif %}
+            <a href="{{ url_for('auth.login') }}" class="site-footer__link">Login</a>
+            <a href="{{ url_for('auth.register') }}" class="site-footer__link">Signup</a>
         </div>
     </div>
 </footer>

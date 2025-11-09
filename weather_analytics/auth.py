@@ -264,7 +264,7 @@ def logout():
     return redirect(url_for('auth.login'))
 
 
-@auth_bp.get('/admin')
+@auth_bp.get('/settings')
 @login_required
 def admin():
     sections = ['password']
@@ -343,7 +343,7 @@ def change_password():
     return redirect(url_for('auth.admin', section='password'))
 
 
-@auth_bp.post('/admin/api-keys/create')
+@auth_bp.post('/settings/api-keys/create')
 @login_required
 def create_api_key():
     name = (request.form.get('name') or '').strip() or 'API-Key'
@@ -369,7 +369,7 @@ def create_api_key():
     return redirect(url_for('auth.admin', section='api_keys'))
 
 
-@auth_bp.post('/admin/api-keys/<int:key_id>/delete')
+@auth_bp.post('/settings/api-keys/<int:key_id>/delete')
 @login_required
 def delete_api_key(key_id: int):
     conn = get_db()

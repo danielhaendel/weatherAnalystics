@@ -20,7 +20,6 @@
 <body class="theme-dark min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
 <div class="absolute right-6 top-6 flex flex-col items-end gap-3">
     {% include '_language_theme_controls.html' %}
-    <a href="{{ url_for('auth.login') }}" class="header-link text-sm">Schon registriert? Anmelden</a>
 </div>
 <div class="w-full max-w-md space-y-6">
     <div class="text-center space-y-2">
@@ -55,6 +54,12 @@
             Registrieren
         </button>
     </form>
+    <div class="text-center space-y-2 text-sm">
+        <a href="{{ url_for('index') }}" class="header-link">Zurück zur Startseite</a>
+        <p class="text-slate-400">Schon registriert?
+            <a href="{{ url_for('auth.login') }}" class="header-link">Anmelden</a>
+        </p>
+    </div>
 </div>
 {% include '_app_i18n_context.html' %}
 <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
