@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="de">
+<html lang="{{ ui['html_lang'] }}">
 <head>
     <meta charset="utf-8">
-    <title>Registrierung | Weather Analytics</title>
+    <title>{{ ui['register_page_title'] }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,8 +23,8 @@
 </div>
 <div class="w-full max-w-md space-y-6">
     <div class="text-center space-y-2">
-        <h1 class="text-2xl font-semibold">Konto erstellen</h1>
-        <p class="text-sm text-slate-400">Lege ein persönliches Konto für API-Zugriffe an.</p>
+        <h1 class="text-2xl font-semibold">{{ ui['register_heading'] }}</h1>
+        <p class="text-sm text-slate-400">{{ ui['register_subheading'] }}</p>
     </div>
 
     {% if error %}
@@ -35,29 +35,29 @@
 
     <form method="post" class="space-y-4">
         <div>
-            <label for="username" class="block text-sm font-medium text-slate-300">Benutzername</label>
+            <label for="username" class="block text-sm font-medium text-slate-300">{{ ui['register_username_label'] }}</label>
             <input id="username" name="username" type="text" required autocomplete="username"
                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40">
         </div>
         <div>
-            <label for="password" class="block text-sm font-medium text-slate-300">Passwort</label>
+            <label for="password" class="block text-sm font-medium text-slate-300">{{ ui['register_password_label'] }}</label>
             <input id="password" name="password" type="password" required autocomplete="new-password"
                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40">
         </div>
         <div>
-            <label for="confirm_password" class="block text-sm font-medium text-slate-300">Passwort bestätigen</label>
+            <label for="confirm_password" class="block text-sm font-medium text-slate-300">{{ ui['register_confirm_label'] }}</label>
             <input id="confirm_password" name="confirm_password" type="password" required autocomplete="new-password"
                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40">
         </div>
         <button type="submit"
                 class="w-full rounded-xl bg-gradient-to-r from-lime-400 via-emerald-400 to-sky-400 px-4 py-2 text-slate-950 font-semibold transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-lime-300/50">
-            Registrieren
+            {{ ui['register_submit'] }}
         </button>
     </form>
     <div class="text-center space-y-2 text-sm">
-        <a href="{{ url_for('index') }}" class="header-link">Zurück zur Startseite</a>
-        <p class="text-slate-400">Schon registriert?
-            <a href="{{ url_for('auth.login') }}" class="header-link">Anmelden</a>
+        <a href="{{ url_for('index') }}" class="header-link">{{ ui['back_to_home'] }}</a>
+        <p class="text-slate-400">{{ ui['register_login_prompt'] }}
+            <a href="{{ url_for('auth.login') }}" class="header-link">{{ ui['register_login_link'] }}</a>
         </p>
     </div>
 </div>

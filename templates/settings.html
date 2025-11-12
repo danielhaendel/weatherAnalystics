@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="de">
+<html lang="{{ ui['html_lang'] }}">
 <head>
     <meta charset="utf-8">
-    <title>Einstellungen | Weather Analytics</title>
+    <title>{{ ui['settings_page_title'] }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,18 +18,18 @@
     </style>
 </head>
 <body class="theme-dark min-h-screen bg-slate-950 text-slate-100">
-{% set loader_text = 'Daten werden aktualisiert...' %}{% include '_loader.html' %}
+{% set loader_text = ui['settings_loader_text'] %}{% include '_loader.html' %}
 <header class="border-b border-white/10 bg-slate-900/80">
     <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <div>
-            <p class="header-tagline text-xs uppercase tracking-[0.35em]">Einstellungen</p>
-            <h1 class="text-2xl font-semibold">Hallo, {{ current_user.username }}</h1>
+            <p class="header-tagline text-xs uppercase tracking-[0.35em]">{{ ui['settings_header_tagline'] }}</p>
+            <h1 class="text-2xl font-semibold">{{ ui['settings_greeting']|replace('{name}', current_user.username) }}</h1>
         </div>
         <div class="flex flex-wrap items-center justify-end gap-3">
             {% include '_language_theme_controls.html' %}
-            <a href="{{ url_for('index') }}" class="header-link text-sm">Zur Startseite</a>
+            <a href="{{ url_for('index') }}" class="header-link text-sm">{{ ui['back_to_home'] }}</a>
             <form method="post" action="{{ url_for('auth.logout') }}" data-show-loader="true">
-                <button type="submit" class="text-sm text-slate-400 transition hover:text-red-300">Abmelden</button>
+                <button type="submit" class="text-sm text-slate-400 transition hover:text-red-300">{{ ui['settings_logout'] }}</button>
             </form>
         </div>
     </div>
@@ -39,8 +39,8 @@
 
 <main class="mx-auto flex w-full max-w-6xl flex-1 gap-8 px-6 py-10 pb-16 min-h-[calc(100vh-160px)]">
     <aside class="w-full max-w-xs rounded-2xl border border-white/10 bg-slate-900/70 p-6">
-        <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Navigation</p>
-        {% set labels = {'data': 'Daten aktualisieren', 'api_keys': 'API-Keys', 'password': 'Passwort ändern'} %}
+        <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">{{ ui['settings_nav_heading'] }}</p>
+        {% set labels = {'data': ui['settings_nav_data'], 'api_keys': ui['settings_nav_api_keys'], 'password': ui['settings_nav_password']} %}
         <nav class="mt-4 flex flex-col gap-1 text-sm">
             {% for sec in available_sections %}
                 <a href="{{ url_for('auth.admin', section=sec) }}"
@@ -54,28 +54,26 @@
     <section class="flex-1 space-y-6">
         {% if active_section == 'password' %}
             <div class="flex h-full flex-col rounded-2xl border border-white/10 bg-slate-900/70 p-6 min-h-[calc(100vh-220px)]">
-                <h2 class="text-xl font-semibold text-white">Passwort ändern</h2>
-                <p class="mt-1 text-sm text-slate-400">Vergebe ein neues Passwort für das aktuelle Konto.</p>
+                <h2 class="text-xl font-semibold text-white">{{ ui['settings_password_heading'] }}</h2>
+                <p class="mt-1 text-sm text-slate-400">{{ ui['settings_password_subheading'] }}</p>
                 <form method="post" action="{{ url_for('auth.change_password') }}" class="mt-6 space-y-4"
                       data-show-loader="true">
                     <div>
-                        <label for="current_password" class="block text-sm font-medium text-slate-300">Aktuelles
-                            Passwort</label>
+                        <label for="current_password" class="block text-sm font-medium text-slate-300">{{ ui['settings_password_current_label'] }}</label>
                         <input id="current_password" name="current_password" type="password" required
                                autocomplete="current-password"
                                class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40">
                     </div>
                     <div class="grid gap-4 md:grid-cols-2">
                         <div>
-                            <label for="new_password" class="block text-sm font-medium text-slate-300">Neues
-                                Passwort</label>
+                            <label for="new_password" class="block text-sm font-medium text-slate-300">{{ ui['settings_password_new_label'] }}</label>
                             <input id="new_password" name="new_password" type="password" required
                                    autocomplete="new-password"
                                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40">
                         </div>
                         <div>
                             <label for="confirm_password"
-                                   class="block text-sm font-medium text-slate-300">Bestätigung</label>
+                                   class="block text-sm font-medium text-slate-300">{{ ui['settings_password_confirm_label'] }}</label>
                             <input id="confirm_password" name="confirm_password" type="password" required
                                    autocomplete="new-password"
                                    class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40">
@@ -83,38 +81,36 @@
                     </div>
                     <button type="submit"
                             class="w-full rounded-xl bg-gradient-to-r from-lime-400 via-emerald-400 to-sky-400 px-4 py-2 text-slate-950 font-semibold transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-lime-300/50">
-                        Passwort speichern
+                        {{ ui['settings_password_submit'] }}
                     </button>
                 </form>
             </div>
         {% elif active_section == 'data' %}
             <div class="flex h-full flex-col rounded-2xl border border-white/10 bg-slate-900/70 p-6 min-h-[calc(100vh-220px)]">
-                <h2 class="text-xl font-semibold text-white">Daten aktualisieren</h2>
-                <p class="mt-1 text-sm text-slate-400">Führen Sie manuelle Aktualisierungen der importierten DWD-Daten
-                    durch.</p>
+                <h2 class="text-xl font-semibold text-white">{{ ui['settings_data_heading'] }}</h2>
+                <p class="mt-1 text-sm text-slate-400">{{ ui['settings_data_subheading'] }}</p>
                 <div class="mt-6 space-y-4">
                     <form class="space-y-2" data-import-kind="stations">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-sm font-medium text-white">Stationsdaten aktualisieren</p>
-                                <p class="text-xs text-slate-400">Lädt die Stations-Metadaten neu vom DWD.</p>
+                                <p class="text-sm font-medium text-white">{{ ui['settings_data_stations_title'] }}</p>
+                                <p class="text-xs text-slate-400">{{ ui['settings_data_stations_description'] }}</p>
                             </div>
                             <button type="button" data-import-trigger="stations"
                                     class="rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-lime-400 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60">
-                                Starten
+                                {{ ui['settings_data_action_start'] }}
                             </button>
                         </div>
                     </form>
                     <form class="space-y-2" data-import-kind="weather">
                         <div class="flex items-center justify-between">
                             <div>
-                                <p class="text-sm font-medium text-white">Wetterdaten vollständig aktualisieren</p>
-                                <p class="text-xs text-slate-400">Lädt alle verfügbaren täglichen Wetterdaten
-                                    herunter.</p>
+                                <p class="text-sm font-medium text-white">{{ ui['settings_data_weather_title'] }}</p>
+                                <p class="text-xs text-slate-400">{{ ui['settings_data_weather_description'] }}</p>
                             </div>
                             <button type="button" data-import-trigger="weather"
                                     class="rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-sky-400 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60">
-                                Starten
+                                {{ ui['settings_data_action_start'] }}
                             </button>
                         </div>
                     </form>
@@ -122,33 +118,30 @@
             </div>
         {% elif active_section == 'api_keys' %}
             <div class="flex h-full flex-col rounded-2xl border border-white/10 bg-slate-900/70 p-6 min-h-[calc(100vh-220px)]">
-                <h2 class="text-xl font-semibold text-white">API-Keys</h2>
-                <p class="mt-1 text-sm text-slate-400">Verwalte persönliche API-Schlüssel, um die Daten
-                    programmgesteuert abzurufen.</p>
+                <h2 class="text-xl font-semibold text-white">{{ ui['settings_api_heading'] }}</h2>
+                <p class="mt-1 text-sm text-slate-400">{{ ui['settings_api_subheading'] }}</p>
                 {% if new_api_key %}
                     <div class="mt-4 rounded-2xl border border-lime-300/40 bg-white/10 p-4 text-sm text-white">
-                        <p class="font-semibold">Neuer API-Key</p>
-                        <p class="mt-1 text-xs text-slate-300">Speichere den Schlüssel jetzt – er wird später nicht mehr
-                            angezeigt.</p>
+                        <p class="font-semibold">{{ ui['settings_api_new_label'] }}</p>
+                        <p class="mt-1 text-xs text-slate-300">{{ ui['settings_api_new_hint'] }}</p>
                         <code class="mt-2 block select-all rounded-xl bg-black/30 px-3 py-2 text-sm tracking-wide">{{ new_api_key }}</code>
                     </div>
                 {% endif %}
                 <form method="post" action="{{ url_for('auth.create_api_key') }}" class="mt-6 space-y-4"
                       data-show-loader="true">
                     <div>
-                        <label for="api_key_name" class="block text-sm font-medium text-slate-300">Bezeichnung</label>
-                        <input id="api_key_name" name="name" type="text" required placeholder="z. B. Interner Client"
+                        <label for="api_key_name" class="block text-sm font-medium text-slate-300">{{ ui['settings_api_name_label'] }}</label>
+                        <input id="api_key_name" name="name" type="text" required placeholder="{{ ui['settings_api_name_placeholder'] }}"
                                class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40">
                     </div>
                     <div>
-                        <label for="expires_in" class="block text-sm font-medium text-slate-300">Laufzeit (Tage, max.
-                            360)</label>
+                        <label for="expires_in" class="block text-sm font-medium text-slate-300">{{ ui['settings_api_expiry_label'] }}</label>
                         <input id="expires_in" name="expires_in" type="number" min="1" max="360" value="90"
                                class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40">
                     </div>
                     <button type="submit"
                             class="w-full rounded-xl bg-gradient-to-r from-sky-400 via-cyan-400 to-lime-400 px-4 py-2 text-slate-950 font-semibold transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-cyan-300/50">
-                        API-Key erstellen
+                        {{ ui['settings_api_create_button'] }}
                     </button>
                 </form>
                 <div class="mt-6 flex-1">
@@ -157,11 +150,11 @@
                             <table class="w-full min-w-[520px] text-left text-sm">
                                 <thead class="text-xs uppercase text-slate-400">
                                 <tr>
-                                    <th class="px-4 py-3">Name</th>
-                                    <th class="px-4 py-3">Key</th>
-                                    <th class="px-4 py-3">Erstellt</th>
-                                    <th class="px-4 py-3">Ablauf</th>
-                                    <th class="px-4 py-3 text-right">Aktionen</th>
+                                    <th class="px-4 py-3">{{ ui['settings_api_table_name'] }}</th>
+                                    <th class="px-4 py-3">{{ ui['settings_api_table_key'] }}</th>
+                                    <th class="px-4 py-3">{{ ui['settings_api_table_created'] }}</th>
+                                    <th class="px-4 py-3">{{ ui['settings_api_table_expires'] }}</th>
+                                    <th class="px-4 py-3 text-right">{{ ui['settings_api_table_actions'] }}</th>
                                 </tr>
                                 </thead>
                                 <tbody class="divide-y divide-white/10 text-slate-100">
@@ -177,10 +170,10 @@
                                         <td class="px-4 py-3 text-right">
                                             <form method="post"
                                                   action="{{ url_for('auth.delete_api_key', key_id=key['id']) }}"
-                                                  onsubmit="return confirm('API-Key wirklich löschen?');">
+                                                  onsubmit="return confirm('{{ ui['settings_api_delete_confirm'] }}');">
                                                 <button type="submit"
                                                         class="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-slate-200 transition hover:border-red-400 hover:text-red-200">
-                                                    Löschen
+                                                    {{ ui['settings_api_delete_button'] }}
                                                 </button>
                                             </form>
                                         </td>
@@ -190,7 +183,7 @@
                             </table>
                         </div>
                     {% else %}
-                        <p class="mt-4 text-sm text-slate-400">Noch keine API-Keys vorhanden.</p>
+                        <p class="mt-4 text-sm text-slate-400">{{ ui['settings_api_empty_state'] }}</p>
                     {% endif %}
                 </div>
             </div>
@@ -267,7 +260,7 @@
             const closeButton = document.createElement('button');
             closeButton.type = 'button';
             closeButton.className = 'admin-toast__close ml-auto inline-flex h-8 w-8 items-center justify-center rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500/60';
-            closeButton.innerHTML = '<span class="sr-only">Schließen</span><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>';
+            closeButton.innerHTML = '<span class="sr-only">{{ ui["settings_toast_close"] }}</span><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>';
 
             let timer = null;
             let startTime = Date.now();
@@ -359,10 +352,33 @@
         const startUrl = "{{ url_for('auth.admin_import_start') }}";
         const statusUrlTemplate = "{{ url_for('auth.admin_import_status', job_id='__JOB__') }}";
         const stageLabels = {
-            prepare: 'Vorbereitung läuft...',
-            stations: 'Stationsdaten werden verarbeitet...',
-            daily: 'Tageswerte werden verarbeitet...',
-            complete: 'Import abgeschlossen',
+            prepare: {{ ui['settings_import_stage_prepare']|tojson }},
+            stations: {{ ui['settings_import_stage_stations']|tojson }},
+            daily: {{ ui['settings_import_stage_daily']|tojson }},
+            complete: {{ ui['settings_import_stage_complete']|tojson }},
+        };
+
+        const successTitle = {{ ui['settings_import_success_title']|tojson }};
+        const stationFallback = {{ ui['settings_import_station_fallback']|tojson }};
+        const weatherFallback = {{ ui['settings_import_weather_fallback']|tojson }};
+        const summaryTemplates = {
+            stations: {{ ui['settings_import_summary_stations']|tojson }},
+            records: {{ ui['settings_import_summary_records']|tojson }},
+            both: {{ ui['settings_import_summary_both']|tojson }},
+            archives: {{ ui['settings_import_summary_archives']|tojson }},
+            archivesFailed: {{ ui['settings_import_summary_archives_failed']|tojson }},
+        };
+        const detailTemplates = {
+            stations: {{ ui['settings_import_detail_stations']|tojson }},
+            records: {{ ui['settings_import_detail_records']|tojson }},
+        };
+        const buttonLabelDefault = {{ ui['settings_import_button_start']|tojson }};
+        const buttonLabelRunning = {{ ui['settings_import_button_running']|tojson }};
+        const importMessages = {
+            failed: {{ i18n_messages['admin_import_failed']|default('Import fehlgeschlagen.')|tojson }},
+            statusMissing: {{ i18n_messages['admin_import_status_missing']|default('Kein Jobstatus verfügbar.')|tojson }},
+            statusError: {{ i18n_messages['admin_import_status_error']|default('Status konnte nicht geladen werden.')|tojson }},
+            startFailed: {{ i18n_messages['admin_import_start_failed']|default('Konnte Job nicht starten.')|tojson }},
         };
 
         let pollTimer = null;
@@ -386,16 +402,24 @@
             return Number.isFinite(num) ? num : 0;
         }
 
+        function formatText(template, replacements) {
+            if (!template) return '';
+            return Object.entries(replacements || {}).reduce(
+                (acc, [key, value]) => acc.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value)),
+                template,
+            );
+        }
+
         function sumCounts(inserted, updated) {
             return parseCount(inserted) + parseCount(updated);
         }
 
         function buildSuccessToast(job) {
-            const defaultToast = {title: 'Datenimport abgeschlossen', message: ''};
+            const defaultToast = {title: successTitle, message: ''};
             if (!job) return defaultToast;
             const summary = (job.detail && job.detail.summary) || '';
             if (summary) {
-                return {title: 'Datenimport abgeschlossen', message: summary};
+                return {title: successTitle, message: summary};
             }
             const result = job.result || {};
             if (job.job_type === 'stations') {
@@ -404,31 +428,36 @@
                     result.updated ?? result?.stations?.updated,
                 );
                 return totalStations
-                    ? {title: 'Datenimport abgeschlossen', message: `${totalStations} Stationen`}
-                    : {title: 'Datenimport abgeschlossen', message: 'Stationsimport abgeschlossen.'};
+                    ? {
+                        title: successTitle,
+                        message: formatText(summaryTemplates.stations, {total: totalStations}),
+                    }
+                    : {title: successTitle, message: stationFallback};
             }
             if (job.job_type === 'weather') {
                 const lines = [];
                 const stationTotal = sumCounts(result?.stations?.inserted, result?.stations?.updated);
                 const dailyTotal = sumCounts(result?.daily?.inserted, result?.daily?.updated);
                 if (stationTotal && dailyTotal) {
-                    lines.push(`${stationTotal} Stationen / ${dailyTotal} Datensätze`);
+                    lines.push(
+                        formatText(summaryTemplates.both, {stations: stationTotal, records: dailyTotal}),
+                    );
                 } else if (stationTotal) {
-                    lines.push(`${stationTotal} Stationen`);
+                    lines.push(formatText(summaryTemplates.stations, {total: stationTotal}));
                 } else if (dailyTotal) {
-                    lines.push(`${dailyTotal} Datensätze`);
+                    lines.push(formatText(summaryTemplates.records, {total: dailyTotal}));
                 }
                 const processed = parseCount(result?.daily?.archives_processed);
                 if (processed) {
                     const failed = parseCount(result?.daily?.archives_failed);
                     const archiveText = failed
-                        ? `Archive: ${processed} verarbeitet / ${failed} fehlgeschlagen`
-                        : `Archive: ${processed} verarbeitet`;
+                        ? formatText(summaryTemplates.archivesFailed, {processed, failed})
+                        : formatText(summaryTemplates.archives, {processed});
                     lines.push(archiveText);
                 }
                 return lines.length
-                    ? {title: 'Datenimport abgeschlossen', message: lines.join('\n')}
-                    : {title: 'Datenimport abgeschlossen', message: 'Wetterdatenimport abgeschlossen.'};
+                    ? {title: successTitle, message: lines.join('\n')}
+                    : {title: successTitle, message: weatherFallback};
             }
             return defaultToast;
         }
@@ -462,14 +491,24 @@
                 if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                 const payload = await resp.json();
                 const job = payload?.job;
-                if (!job) throw new Error('Kein Jobstatus verfügbar.');
+                if (!job) throw new Error(importMessages.statusMissing);
                 const percent = (job.progress || 0) * 100;
                 const detailLines = [];
                 if (job.detail?.stations_inserted || job.detail?.stations_updated) {
-                    detailLines.push(`Stationen: ${job.detail.stations_inserted || 0} / ${job.detail.stations_updated || 0}`);
+                    detailLines.push(
+                        formatText(detailTemplates.stations, {
+                            inserted: job.detail.stations_inserted || 0,
+                            updated: job.detail.stations_updated || 0,
+                        }),
+                    );
                 }
                 if (job.detail?.daily_inserted || job.detail?.daily_updated) {
-                    detailLines.push(`Tageswerte: ${job.detail.daily_inserted || 0} / ${job.detail.daily_updated || 0}`);
+                    detailLines.push(
+                        formatText(detailTemplates.records, {
+                            inserted: job.detail.daily_inserted || 0,
+                            updated: job.detail.daily_updated || 0,
+                        }),
+                    );
                 }
                 updateProgress({
                     percent,
@@ -485,7 +524,7 @@
                     if (isFailed) {
                         showToast({
                             kind: 'error',
-                            message: job.detail?.summary || job.error || 'Import fehlgeschlagen.',
+                            message: job.detail?.summary || job.error || importMessages.failed,
                         });
                     } else {
                         const toastData = buildSuccessToast(job);
@@ -497,7 +536,7 @@
                     }
                     triggerButtons.forEach((btn) => {
                         btn.disabled = false;
-                        btn.textContent = 'Starten';
+                        btn.textContent = buttonLabelDefault;
                     });
                     activeJob = null;
                     return;
@@ -506,12 +545,12 @@
                 pollTimer = setTimeout(() => pollJob(jobId), 2000);
             } catch (err) {
                 console.error(err);
-                showToast({kind: 'error', message: err.message || 'Status konnte nicht geladen werden.'});
+                showToast({kind: 'error', message: err.message || importMessages.statusError});
                 clearTimer();
                 showOverlay(false);
                 triggerButtons.forEach((btn) => {
                     btn.disabled = false;
-                    btn.textContent = 'Starten';
+                    btn.textContent = buttonLabelDefault;
                 });
                 activeJob = null;
             }
@@ -524,7 +563,7 @@
                 if (!kind) return;
                 triggerButtons.forEach((button) => {
                     button.disabled = true;
-                    button.textContent = 'Läuft...';
+                    button.textContent = buttonLabelRunning;
                 });
                 showOverlay(true);
                 updateProgress({percent: 0, message: stageLabels.prepare});
@@ -536,16 +575,16 @@
                     });
                     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
                     const data = await resp.json();
-                    if (!data?.job_id) throw new Error('Konnte Job nicht starten.');
+                    if (!data?.job_id) throw new Error(importMessages.startFailed);
                     activeJob = data.job_id;
                     pollJob(activeJob);
                 } catch (err) {
                     console.error(err);
-                    showToast({kind: 'error', message: err.message || 'Import konnte nicht gestartet werden.'});
+                    showToast({kind: 'error', message: err.message || importMessages.startFailed});
                     showOverlay(false);
                     triggerButtons.forEach((button) => {
                         button.disabled = false;
-                        button.textContent = 'Starten';
+                        button.textContent = buttonLabelDefault;
                     });
                 }
             });
