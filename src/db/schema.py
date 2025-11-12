@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Tuple
 
-from .db import execute_script, get_db
+from . import execute_script, get_db
 
 
 STATIONS_TABLE_SQL = """

@@ -5,9 +5,9 @@ from datetime import date
 import requests
 from flask import Blueprint, request, jsonify, abort, current_app
 
-from ..dwd_kl_importer import import_station_metadata
+from ..importers import import_station_metadata
 from ..db import get_db
-from ..report_service import (
+from ..reports import (
     ReportError,
     generate_report,
     get_coverage,

@@ -13,15 +13,15 @@ from flask import Flask, abort, make_response, render_template, request, url_for
 from .api import api_bp
 from .auth import auth_bp, init_auth
 from .db import ensure_database, get_db, init_app as init_db_app
-from .exporters import build_report_xlsx
-from .report_service import (
+from .db.schema import ensure_weather_schema
+from .reports import (
     ReportError,
+    build_report_xlsx,
     generate_report,
     get_coverage as get_report_coverage,
     temp_durchschnitt_auswertung,
     temperature_samples,
 )
-from .schema import ensure_weather_schema
 
 PACKAGE_ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = PACKAGE_ROOT.parent
@@ -228,7 +228,6 @@ def create_app() -> Flask:
             response.set_cookie('lang', resolved_lang, max_age=60 * 60 * 24 * 365, samesite='Lax')
 
         return response
-
 
     @app.get('/reports')
     def reports():

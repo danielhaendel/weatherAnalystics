@@ -20,8 +20,8 @@ import requests
 from requests import Response, Session
 from requests.adapters import HTTPAdapter, Retry
 
-from .db import get_db
-from .schema import ensure_weather_schema
+from ..db import get_db
+from ..db.schema import ensure_weather_schema
 
 
 BASE_URL = 'https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/daily/kl/historical/'

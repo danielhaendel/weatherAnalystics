@@ -9,7 +9,7 @@ if str(ROOT) not in sys.path:
 
 from weather_analytics import create_app
 from weather_analytics.db import get_db
-from weather_analytics.schema import ensure_weather_schema
+from weather_analytics.db.schema import ensure_weather_schema
 
 
 @pytest.fixture

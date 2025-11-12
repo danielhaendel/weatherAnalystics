@@ -29,9 +29,9 @@ from flask_login import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from .db import execute_script, get_db
-from .dwd_kl_importer import import_full_history, import_station_metadata
-from .job_manager import get_job, start_job
+from ..db import execute_script, get_db
+from ..importers import import_full_history, import_station_metadata
+from ..jobs import get_job, start_job
 
 auth_bp = Blueprint('auth', __name__)
 
