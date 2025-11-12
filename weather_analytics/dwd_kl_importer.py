@@ -194,8 +194,8 @@ class DwdKlImporter:
             return nullcontext()
         return current_app.app_context()
 
-    def _ensure_schema(self) -> None:
-        ensure_weather_schema(reset=True)
+    def _ensure_schema(self, *, reset: bool = False) -> None:
+        ensure_weather_schema(reset=reset)
 
     # --- station import --------------------------------------------------------------
 
