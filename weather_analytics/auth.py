@@ -32,41 +32,41 @@ from .db import execute_script, get_db
 from .dwd_kl_importer import import_full_history, import_station_metadata
 from .job_manager import get_job, start_job
 
-
 auth_bp = Blueprint('auth', __name__)
 
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
 login_manager.login_message = 'Bitte melden Sie sich an, um fortzufahren.'
 
-
 USER_SCHEMA = (
     """
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        is_admin INTEGER NOT NULL DEFAULT 0,
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
+    CREATE TABLE IF NOT EXISTS users
+    (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        username      TEXT UNIQUE NOT NULL,
+        password_hash TEXT        NOT NULL,
+        is_admin      INTEGER     NOT NULL DEFAULT 0,
+        created_at    TEXT        NOT NULL,
+        updated_at    TEXT        NOT NULL
     )
     """,
 )
 
 API_KEY_SCHEMA = (
     """
-    CREATE TABLE IF NOT EXISTS api_keys (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        api_key TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        expires_at TEXT NOT NULL,
-        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    CREATE TABLE IF NOT EXISTS api_keys
+    (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id    INTEGER NOT NULL,
+        name       TEXT    NOT NULL,
+        api_key    TEXT    NOT NULL,
+        created_at TEXT    NOT NULL,
+        expires_at TEXT    NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
     )
     """,
     """
-    CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id)
+    CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys (user_id)
     """,
 )
 
@@ -79,9 +79,21 @@ def _row_is_admin(row) -> int:
     if row is None:
         return 0
     try:
-        return row['is_admin']
-    except (KeyError, IndexError, TypeError):
+        value = row['is_admin']
+        if value in (None, ''):
+            return 0
+        return int(value)
+    except (KeyError, IndexError, TypeError, ValueError):
         return 0
+
+
+def _is_current_user_admin() -> bool:
+    try:
+        user_id = int(getattr(current_user, 'id', 0))
+    except (TypeError, ValueError):
+        return False
+    row = get_db().execute('SELECT is_admin FROM users WHERE id = ?', (user_id,)).fetchone()
+    return bool(row and _row_is_admin(row))
 
 
 class User(UserMixin):
@@ -141,8 +153,8 @@ def is_safe_redirect(target: Optional[str]) -> bool:
     ref_url = urlparse(request.host_url)
     test_url = urlparse(urljoin(request.host_url, target))
     return (
-        test_url.scheme in {'http', 'https'} and
-        ref_url.netloc == test_url.netloc
+            test_url.scheme in {'http', 'https'} and
+            ref_url.netloc == test_url.netloc
     )
 
 
@@ -267,34 +279,39 @@ def logout():
 @auth_bp.get('/settings')
 @login_required
 def admin():
+    is_admin = _is_current_user_admin()
     sections = ['password']
-    if current_user.is_admin:
+    if is_admin:
         sections.insert(0, 'data')
     else:
         sections.insert(0, 'api_keys')
+
     requested = request.args.get('section') or sections[0]
     if requested not in sections:
         requested = sections[0]
+
     api_keys = []
     api_key_now = None
-    if requested == 'api_keys':
+    if requested == 'api_keys' and not is_admin:
         api_keys = get_api_keys_for_user(int(current_user.id))
         api_key_now = dt.datetime.utcnow().isoformat(timespec='seconds')
+
     new_api_key = session.pop('new_api_key_value', None)
     return render_template(
         'settings.html',
         active_section=requested,
         available_sections=sections,
+        is_admin=is_admin,
         api_keys=api_keys,
         api_key_now=api_key_now,
-        new_api_key=new_api_key,
+        new_api_key=new_api_key if not is_admin else None,
     )
 
 
 @auth_bp.post('/admin/import/start')
 @login_required
 def admin_import_start():
-    if not current_user.is_admin:
+    if not _is_current_user_admin():
         return jsonify({'ok': False, 'error': 'forbidden'}), 403
     payload = request.get_json(silent=True) or {}
     kind = (payload.get('kind') or '').strip().lower()
@@ -312,7 +329,7 @@ def admin_import_start():
 @auth_bp.get('/admin/import/<job_id>')
 @login_required
 def admin_import_status(job_id: str):
-    if not current_user.is_admin:
+    if not _is_current_user_admin():
         return jsonify({'ok': False, 'error': 'forbidden'}), 403
     job = get_job(job_id)
     if job is None:
@@ -346,6 +363,9 @@ def change_password():
 @auth_bp.post('/settings/api-keys/create')
 @login_required
 def create_api_key():
+    if _is_current_user_admin():
+        flash('API-Keys stehen nur Benutzerkonten zur Verfügung.', 'error')
+        return redirect(url_for('auth.admin', section='password'))
     name = (request.form.get('name') or '').strip() or 'API-Key'
     try:
         days = int(request.form.get('expires_in') or 90)
@@ -372,6 +392,9 @@ def create_api_key():
 @auth_bp.post('/settings/api-keys/<int:key_id>/delete')
 @login_required
 def delete_api_key(key_id: int):
+    if _is_current_user_admin():
+        flash('API-Keys stehen nur Benutzerkonten zur Verfügung.', 'error')
+        return redirect(url_for('auth.admin', section='password'))
     conn = get_db()
     with conn:
         cur = conn.execute(

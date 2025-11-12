@@ -493,24 +493,10 @@ body.theme-light .station-marker-core {
     transition: width 0.4s ease;
 }
 
-.loading-overlay__progress-meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 0.85rem;
-    color: #e2e8f0;
-}
-
-.loading-overlay__progress-percent {
-    font-weight: 600;
-    letter-spacing: 0.03em;
-}
-
 .loading-overlay__progress-message {
-    flex: 1;
-    margin-left: 0.75rem;
-    text-align: right;
+    font-size: 0.85rem;
     color: #cbd5f5;
+    text-align: center;
 }
 
 .loading-overlay__progress-detail {

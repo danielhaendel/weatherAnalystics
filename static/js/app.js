@@ -777,16 +777,18 @@ function validateForm(options = {}) {
     const { suppressCoordinateToast = false } = options;
     let ok = true;
 
-    const lat = parseFloat(latField.value);
-    const lon = parseFloat(lonField.value);
-    const coordsValid = Number.isFinite(lat) && Number.isFinite(lon) && isInGermany(lat, lon);
-    if (!coordsValid) {
-        if (!suppressCoordinateToast) {
-            showCoordinateError(TEXT.validateSelectGermany);
+    if (latField && lonField) {
+        const lat = parseFloat(latField.value);
+        const lon = parseFloat(lonField.value);
+        const coordsValid = Number.isFinite(lat) && Number.isFinite(lon) && isInGermany(lat, lon);
+        if (!coordsValid) {
+            if (!suppressCoordinateToast) {
+                showCoordinateError(TEXT.validateSelectGermany);
+            }
+            ok = false;
+        } else if (!suppressCoordinateToast) {
+            showCoordinateError('');
         }
-        ok = false;
-    } else if (!suppressCoordinateToast) {
-        showCoordinateError('');
     }
 
     const start = document.getElementById('start_date');
@@ -825,7 +827,7 @@ function validateForm(options = {}) {
         }
     }
 
-    if (coordsValid && suppressCoordinateToast) {
+    if (typeof coordsValid === 'boolean' && coordsValid && suppressCoordinateToast) {
         showCoordinateError('');
     }
     return ok;
@@ -1083,12 +1085,15 @@ function setupAnalyzeButton() {
     initDateRangePicker();
     setupAnalyzeButton();
     validateForm({ suppressCoordinateToast: true });
-    try {
-        await ensureLeafletReady();
-        initMap();
-    } catch (err) {
-        console.error(err);
-        markMapUnavailable();
+    const mapElement = document.getElementById('map');
+    if (mapElement) {
+        try {
+            await ensureLeafletReady();
+            initMap();
+        } catch (err) {
+            console.error(err);
+            markMapUnavailable();
+        }
     }
 })();
 

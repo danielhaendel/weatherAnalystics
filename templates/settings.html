@@ -25,7 +25,7 @@
             <p class="header-tagline text-xs uppercase tracking-[0.35em]">Einstellungen</p>
             <h1 class="text-2xl font-semibold">Hallo, {{ current_user.username }}</h1>
         </div>
-        <div class="flex flex-wrap items-center gap-3 justify-end">
+        <div class="flex flex-wrap items-center justify-end gap-3">
             {% include '_language_theme_controls.html' %}
             <a href="{{ url_for('index') }}" class="header-link text-sm">Zur Startseite</a>
             <form method="post" action="{{ url_for('auth.logout') }}" data-show-loader="true">
@@ -40,12 +40,12 @@
 <main class="mx-auto flex w-full max-w-6xl flex-1 gap-8 px-6 py-10 pb-16 min-h-[calc(100vh-160px)]">
     <aside class="w-full max-w-xs rounded-2xl border border-white/10 bg-slate-900/70 p-6">
         <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Navigation</p>
-{% set section_labels = {'data': 'Daten aktualisieren', 'password': 'Passwort ändern', 'api_keys': 'API-Keys'} %}
+        {% set labels = {'data': 'Daten aktualisieren', 'api_keys': 'API-Keys', 'password': 'Passwort ändern'} %}
         <nav class="mt-4 flex flex-col gap-1 text-sm">
             {% for sec in available_sections %}
                 <a href="{{ url_for('auth.admin', section=sec) }}"
                    class="flex items-center justify-between rounded-xl px-4 py-3 transition {{ 'bg-white/5 text-white border border-white/15' if active_section == sec else 'text-slate-400 hover:bg-white/5 hover:text-white border border-transparent' }}">
-                    <span>{{ section_labels[sec] }}</span>
+                    <span>{{ labels[sec] }}</span>
                 </a>
             {% endfor %}
         </nav>
@@ -53,9 +53,9 @@
 
     <section class="flex-1 space-y-6">
         {% if active_section == 'password' %}
-            <div class="flex h-full flex-col rounded-2xl border border-white/10 bg-slate-900/70 p-6 min-h-[calc(100vh-220px)] pb-10">
+            <div class="flex h-full flex-col rounded-2xl border border-white/10 bg-slate-900/70 p-6 min-h-[calc(100vh-220px)]">
                 <h2 class="text-xl font-semibold text-white">Passwort ändern</h2>
-                <p class="mt-1 text-sm text-slate-400">Vergeben Sie ein neues Passwort für das aktuelle Konto.</p>
+                <p class="mt-1 text-sm text-slate-400">Vergebe ein neues Passwort für das aktuelle Konto.</p>
                 <form method="post" action="{{ url_for('auth.change_password') }}" class="mt-6 space-y-4"
                       data-show-loader="true">
                     <div>
@@ -87,26 +87,62 @@
                     </button>
                 </form>
             </div>
+        {% elif active_section == 'data' %}
+            <div class="flex h-full flex-col rounded-2xl border border-white/10 bg-slate-900/70 p-6 min-h-[calc(100vh-220px)]">
+                <h2 class="text-xl font-semibold text-white">Daten aktualisieren</h2>
+                <p class="mt-1 text-sm text-slate-400">Führen Sie manuelle Aktualisierungen der importierten DWD-Daten
+                    durch.</p>
+                <div class="mt-6 space-y-4">
+                    <form class="space-y-2" data-import-kind="stations">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-white">Stationsdaten aktualisieren</p>
+                                <p class="text-xs text-slate-400">Lädt die Stations-Metadaten neu vom DWD.</p>
+                            </div>
+                            <button type="button" data-import-trigger="stations"
+                                    class="rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-lime-400 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60">
+                                Starten
+                            </button>
+                        </div>
+                    </form>
+                    <form class="space-y-2" data-import-kind="weather">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-white">Wetterdaten vollständig aktualisieren</p>
+                                <p class="text-xs text-slate-400">Lädt alle verfügbaren täglichen Wetterdaten
+                                    herunter.</p>
+                            </div>
+                            <button type="button" data-import-trigger="weather"
+                                    class="rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-sky-400 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60">
+                                Starten
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         {% elif active_section == 'api_keys' %}
-            {% if not current_user.is_admin %}
-            <div class="flex h-full flex-col rounded-2xl border border-white/10 bg-slate-900/70 p-6 min-h-[calc(100vh-220px)] pb-10">
+            <div class="flex h-full flex-col rounded-2xl border border-white/10 bg-slate-900/70 p-6 min-h-[calc(100vh-220px)]">
                 <h2 class="text-xl font-semibold text-white">API-Keys</h2>
-                <p class="mt-1 text-sm text-slate-400">Verwalte persönliche API-Schlüssel, um die Daten programmgesteuert abzurufen.</p>
+                <p class="mt-1 text-sm text-slate-400">Verwalte persönliche API-Schlüssel, um die Daten
+                    programmgesteuert abzurufen.</p>
                 {% if new_api_key %}
                     <div class="mt-4 rounded-2xl border border-lime-300/40 bg-white/10 p-4 text-sm text-white">
                         <p class="font-semibold">Neuer API-Key</p>
-                        <p class="mt-1 text-xs text-slate-300">Speichere den Schlüssel jetzt – er wird später nicht mehr angezeigt.</p>
+                        <p class="mt-1 text-xs text-slate-300">Speichere den Schlüssel jetzt – er wird später nicht mehr
+                            angezeigt.</p>
                         <code class="mt-2 block select-all rounded-xl bg-black/30 px-3 py-2 text-sm tracking-wide">{{ new_api_key }}</code>
                     </div>
                 {% endif %}
-                <form method="post" action="{{ url_for('auth.create_api_key') }}" class="mt-6 space-y-4" data-show-loader="true">
+                <form method="post" action="{{ url_for('auth.create_api_key') }}" class="mt-6 space-y-4"
+                      data-show-loader="true">
                     <div>
                         <label for="api_key_name" class="block text-sm font-medium text-slate-300">Bezeichnung</label>
                         <input id="api_key_name" name="name" type="text" required placeholder="z. B. Interner Client"
                                class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40">
                     </div>
                     <div>
-                        <label for="expires_in" class="block text-sm font-medium text-slate-300">Laufzeit (Tage, max. 360)</label>
+                        <label for="expires_in" class="block text-sm font-medium text-slate-300">Laufzeit (Tage, max.
+                            360)</label>
                         <input id="expires_in" name="expires_in" type="number" min="1" max="360" value="90"
                                class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:border-lime-400 focus:outline-none focus:ring-2 focus:ring-lime-500/40">
                     </div>
@@ -139,7 +175,8 @@
                                         <td class="px-4 py-3 text-sm text-slate-300">{{ key['created_at'] }}</td>
                                         <td class="px-4 py-3 text-sm {{ 'text-red-300' if expired else 'text-slate-300' }}">{{ key['expires_at'] }}</td>
                                         <td class="px-4 py-3 text-right">
-                                            <form method="post" action="{{ url_for('auth.delete_api_key', key_id=key['id']) }}"
+                                            <form method="post"
+                                                  action="{{ url_for('auth.delete_api_key', key_id=key['id']) }}"
                                                   onsubmit="return confirm('API-Key wirklich löschen?');">
                                                 <button type="submit"
                                                         class="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold text-slate-200 transition hover:border-red-400 hover:text-red-200">
@@ -157,52 +194,6 @@
                     {% endif %}
                 </div>
             </div>
-            {% else %}
-            <div class="rounded-2xl border border-white/10 bg-slate-900/70 p-6">
-                <h2 class="text-xl font-semibold text-white">Nur für Nutzer</h2>
-                <p class="mt-1 text-sm text-slate-400">API-Keys stehen nur normalen Benutzerkonten zur Verfügung.</p>
-            </div>
-            {% endif %}
-        {% elif active_section == 'data' %}
-            {% if current_user.is_admin %}
-            <div class="flex h-full flex-col rounded-2xl border border-white/10 bg-slate-900/70 p-6 min-h-[calc(100vh-220px)] pb-10">
-                <h2 class="text-xl font-semibold text-white">Daten aktualisieren</h2>
-                <p class="mt-1 text-sm text-slate-400">Führen Sie manuelle Aktualisierungen der importierten DWD-Daten
-                    durch.</p>
-                <div class="mt-6 space-y-4">
-                    <form class="space-y-2" data-import-kind="stations">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm font-medium text-white">Stationsdaten aktualisieren</p>
-                                <p class="text-xs text-slate-400">Lädt die Stations-Metadaten neu vom DWD.</p>
-                            </div>
-                            <button type="button" data-import-trigger="stations"
-                                    class="rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-lime-400 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60">
-                                Starten
-                            </button>
-                        </div>
-                    </form>
-                    <form class="space-y-2" data-import-kind="weather">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm font-medium text-white">Wetterdaten vollständig aktualisieren</p>
-                                <p class="text-xs text-slate-400">Lädt alle verfügbaren täglichen Wetterdaten
-                                    herunter.</p>
-                            </div>
-                            <button type="button" data-import-trigger="weather"
-                                    class="rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-sky-400 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60">
-                                Starten
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            {% else %}
-            <div class="rounded-2xl border border-white/10 bg-slate-900/70 p-6">
-                <h2 class="text-xl font-semibold text-white">Keine Berechtigung</h2>
-                <p class="mt-1 text-sm text-slate-400">Nur Administratoren können Datenaktualisierungen starten.</p>
-            </div>
-            {% endif %}
         {% endif %}
     </section>
 </main>
@@ -216,9 +207,7 @@
     (function () {
         const container = document.getElementById('toast_container');
         const dataEl = document.getElementById('flash-data');
-        if (!container || !dataEl) {
-            return;
-        }
+        if (!container || !dataEl) return;
 
         const VARIANTS = {
             success: {
@@ -240,13 +229,11 @@
                 border: 'border-rose-500/40',
                 iconBg: 'bg-rose-500/10 text-rose-300',
                 icon: '<svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>'
-            }
+            },
         };
 
-        function showToast({kind = 'info', message = '', autoDismiss = true, duration = 6000}) {
-            if (!message) {
-                return;
-            }
+        function showToast({kind = 'info', title = '', message = '', autoDismiss = true, duration = 6000}) {
+            if (!title && !message) return;
             const variant = VARIANTS[kind] || VARIANTS.info;
             const toast = document.createElement('div');
             toast.className = `admin-toast relative flex items-center w-full max-w-sm gap-3 p-4 pb-6 mb-4 rounded-2xl border shadow-lg backdrop-blur-xl transform transition-all duration-300 ease-out translate-x-6 opacity-0 ${variant.border}`;
@@ -257,8 +244,25 @@
             iconWrapper.innerHTML = variant.icon;
 
             const textWrapper = document.createElement('div');
-            textWrapper.className = 'text-sm font-medium text-slate-100';
-            textWrapper.textContent = message;
+            textWrapper.className = 'flex flex-col text-sm';
+
+            if (title) {
+                const titleEl = document.createElement('div');
+                titleEl.className = 'font-semibold text-white';
+                titleEl.textContent = title;
+                textWrapper.appendChild(titleEl);
+            }
+
+            if (message) {
+                const messageEl = document.createElement('div');
+                messageEl.className = `${title ? 'mt-1' : ''} text-slate-300`;
+                messageEl.textContent = message;
+                textWrapper.appendChild(messageEl);
+            }
+
+            if (!title && !message) {
+                textWrapper.textContent = '';
+            }
 
             const closeButton = document.createElement('button');
             closeButton.type = 'button';
@@ -276,10 +280,7 @@
             progressWrapper.appendChild(progressBar);
 
             const removeToast = () => {
-                if (timer) {
-                    clearTimeout(timer);
-                    timer = null;
-                }
+                if (timer) clearTimeout(timer);
                 toast.classList.remove('translate-x-0', 'opacity-100');
                 toast.classList.add('translate-x-6', 'opacity-0');
                 setTimeout(() => toast.remove(), 260);
@@ -300,23 +301,18 @@
             }
 
             toast.addEventListener('mouseenter', () => {
-                if (!autoDismiss || !timer) {
-                    return;
-                }
+                if (!autoDismiss || !timer) return;
                 const elapsed = Date.now() - startTime;
                 remaining = Math.max(0, duration - elapsed);
                 clearTimeout(timer);
                 timer = null;
-                const percent = (remaining / duration) * 100;
                 progressBar.style.transition = 'none';
-                progressBar.style.width = `${percent}%`;
+                progressBar.style.width = `${(remaining / duration) * 100}%`;
                 progressBar.getBoundingClientRect();
             });
 
             toast.addEventListener('mouseleave', () => {
-                if (!autoDismiss || timer || remaining <= 0) {
-                    return;
-                }
+                if (!autoDismiss || timer || remaining <= 0) return;
                 startTime = Date.now();
                 requestAnimationFrame(() => {
                     progressBar.style.transition = `width linear ${remaining}ms`;
@@ -338,14 +334,12 @@
         }
 
         window.adminShowToast = showToast;
-
         let messages = [];
         try {
             messages = JSON.parse(dataEl.textContent || '[]');
         } catch (err) {
-            console.warn('Konnte Flash-Meldungen nicht lesen:', err);
+            console.warn('Flash-Meldungen nicht lesbar:', err);
         }
-
         messages.forEach(([category, message]) => {
             showToast({kind: String(category || 'info').toLowerCase(), message, autoDismiss: true, duration: 6000});
         });
@@ -353,30 +347,27 @@
 
     (function () {
         const overlay = document.getElementById('loading_overlay');
-        if (!overlay) {
-            return;
-        }
+        const triggerButtons = Array.from(document.querySelectorAll('[data-import-trigger]'));
+        if (!overlay || !triggerButtons.length) return;
 
         const loaderTextEl = overlay.querySelector('.loading-overlay__text');
         const defaultOverlayText = loaderTextEl ? loaderTextEl.getAttribute('data-default-text') || loaderTextEl.textContent : '';
-        const progressContainer = overlay.querySelector('[data-progress-container]');
         const progressBar = overlay.querySelector('[data-progress-bar]');
-        const progressPercent = overlay.querySelector('[data-progress-percent]');
         const progressMessage = overlay.querySelector('[data-progress-message]');
         const progressDetail = overlay.querySelector('[data-progress-detail]');
-        const showToast = window.adminShowToast || function noop() {};
-        const triggerButtons = Array.from(document.querySelectorAll('[data-import-trigger]'));
+        const showToast = window.adminShowToast || function () {};
         const startUrl = "{{ url_for('auth.admin_import_start') }}";
         const statusUrlTemplate = "{{ url_for('auth.admin_import_status', job_id='__JOB__') }}";
         const stageLabels = {
             prepare: 'Vorbereitung läuft...',
             stations: 'Stationsdaten werden verarbeitet...',
             daily: 'Tageswerte werden verarbeitet...',
-            complete: 'Import abgeschlossen'
+            complete: 'Import abgeschlossen',
         };
 
         let pollTimer = null;
         let activeJob = null;
+        const COMPLETED_STATES = new Set(['completed', 'finished']);
 
         function clearTimer() {
             if (pollTimer) {
@@ -385,318 +376,179 @@
             }
         }
 
-        function setLoaderText(value) {
-            if (loaderTextEl) {
-                loaderTextEl.textContent = value;
+        function showOverlay(on) {
+            overlay.classList.toggle('is-visible', on);
+            overlay.setAttribute('aria-hidden', String(!on));
+        }
+
+        function parseCount(value) {
+            const num = Number(value);
+            return Number.isFinite(num) ? num : 0;
+        }
+
+        function sumCounts(inserted, updated) {
+            return parseCount(inserted) + parseCount(updated);
+        }
+
+        function buildSuccessToast(job) {
+            const defaultToast = {title: 'Datenimport abgeschlossen', message: ''};
+            if (!job) return defaultToast;
+            const summary = (job.detail && job.detail.summary) || '';
+            if (summary) {
+                return {title: 'Datenimport abgeschlossen', message: summary};
             }
+            const result = job.result || {};
+            if (job.job_type === 'stations') {
+                const totalStations = sumCounts(
+                    result.inserted ?? result?.stations?.inserted,
+                    result.updated ?? result?.stations?.updated,
+                );
+                return totalStations
+                    ? {title: 'Datenimport abgeschlossen', message: `${totalStations} Stationen`}
+                    : {title: 'Datenimport abgeschlossen', message: 'Stationsimport abgeschlossen.'};
+            }
+            if (job.job_type === 'weather') {
+                const lines = [];
+                const stationTotal = sumCounts(result?.stations?.inserted, result?.stations?.updated);
+                const dailyTotal = sumCounts(result?.daily?.inserted, result?.daily?.updated);
+                if (stationTotal && dailyTotal) {
+                    lines.push(`${stationTotal} Stationen / ${dailyTotal} Datensätze`);
+                } else if (stationTotal) {
+                    lines.push(`${stationTotal} Stationen`);
+                } else if (dailyTotal) {
+                    lines.push(`${dailyTotal} Datensätze`);
+                }
+                const processed = parseCount(result?.daily?.archives_processed);
+                if (processed) {
+                    const failed = parseCount(result?.daily?.archives_failed);
+                    const archiveText = failed
+                        ? `Archive: ${processed} verarbeitet / ${failed} fehlgeschlagen`
+                        : `Archive: ${processed} verarbeitet`;
+                    lines.push(archiveText);
+                }
+                return lines.length
+                    ? {title: 'Datenimport abgeschlossen', message: lines.join('\n')}
+                    : {title: 'Datenimport abgeschlossen', message: 'Wetterdatenimport abgeschlossen.'};
+            }
+            return defaultToast;
         }
 
         function setProgressDetail(text) {
-            if (!progressDetail) {
-                return;
-            }
+            if (!progressDetail) return;
             progressDetail.innerHTML = '';
-            const content = typeof text === 'string' ? text : text == null ? '' : String(text);
-            if (!content) {
+            if (!text) {
                 progressDetail.hidden = true;
                 return;
             }
-            const lines = content.split('\n');
-            lines.forEach((line, index) => {
-                progressDetail.appendChild(document.createTextNode(line));
-                if (index < lines.length - 1) {
-                    progressDetail.appendChild(document.createElement('br'));
-                }
+            text.split('\n').forEach((line) => {
+                const div = document.createElement('div');
+                div.className = 'text-xs text-slate-300';
+                div.textContent = line;
+                progressDetail.appendChild(div);
             });
             progressDetail.hidden = false;
         }
 
-        function resetProgress() {
-            if (progressContainer) {
-                progressContainer.hidden = true;
-            }
-            if (progressBar) {
-                progressBar.style.width = '0%';
-            }
-            if (progressPercent) {
-                progressPercent.textContent = '0%';
-            }
-            if (progressMessage) {
-                progressMessage.textContent = '';
-            }
-            setProgressDetail('');
-        }
-
-        function showOverlay() {
-            overlay.classList.add('is-visible');
-            overlay.setAttribute('aria-hidden', 'false');
-        }
-
-        function hideOverlay() {
-            overlay.classList.remove('is-visible');
-            overlay.setAttribute('aria-hidden', 'true');
-            resetProgress();
-            setLoaderText(defaultOverlayText);
-        }
-
-        window.addEventListener('pageshow', hideOverlay);
-
-        function setButtonsDisabled(state) {
-            triggerButtons.forEach((button) => {
-                button.disabled = state;
-            });
-        }
-
-        function schedulePoll(jobId) {
-            pollTimer = window.setTimeout(() => pollJob(jobId), 1200);
-        }
-
-        function formatDetail(job) {
-            const detail = job.detail || {};
-            const stage = job.stage || detail.stage || '';
-            if (stage === 'stations') {
-                const inserted = detail.stations_inserted ?? 0;
-                const updated = detail.stations_updated ?? 0;
-                return [`Stationen neu ${inserted}`, `Aktualisiert ${updated}`].join('\n');
-            }
-            if (stage === 'daily') {
-                const total = detail.archives_total ?? 0;
-                const processed = detail.archives_processed ?? 0;
-                const failed = detail.archives_failed ?? 0;
-                const inserted = detail.daily_inserted ?? 0;
-                const updated = detail.daily_updated ?? 0;
-                const lines = [];
-                lines.push(`Dateien ${processed}/${total}`);
-                lines.push(`Neu ${inserted}`);
-                lines.push(`Aktualisiert ${updated}`);
-                if (failed) {
-                    lines.push(`Fehler ${failed}`);
-                }
-                return lines.join('\n');
-            }
-            if (stage === 'complete') {
-                const result = job.result || {};
-                if (job.job_type === 'weather') {
-                    const daily = result.daily || {};
-                    const processed = daily.archives_processed ?? 0;
-                    const failed = daily.archives_failed ?? 0;
-                    const total = processed + failed;
-                    if (total) {
-                        return `Dateien ${processed}/${total}`;
-                    }
-                }
-                if (job.job_type === 'stations') {
-                    const inserted = result.inserted ?? 0;
-                    const updated = result.updated ?? 0;
-                    return `Stationen neu: ${inserted}, aktualisiert: ${updated}`;
-                }
-            }
-            return '';
-        }
-
-        function updateOverlay(job) {
-            if (progressContainer) {
-                progressContainer.hidden = false;
-            }
-            const percent = Math.max(0, Math.min(100, Number(job.progress || 0)));
-            if (progressBar) {
-                progressBar.style.width = `${percent}%`;
-            }
-            if (progressPercent) {
-                progressPercent.textContent = `${Math.round(percent)}%`;
-            }
-            const stage = job.stage || (job.detail && job.detail.stage) || '';
-            const message = job.message || stageLabels[stage] || 'Import wird ausgeführt...';
-            if (progressMessage) {
-                progressMessage.textContent = message;
-            }
-            setProgressDetail(formatDetail(job));
-        }
-
-        function buildSummary(job) {
-            const result = job.result || {};
-            if (job.job_type === 'stations') {
-                const inserted = result.inserted ?? 0;
-                const updated = result.updated ?? 0;
-                return `Stationsdaten aktualisiert (neu: ${inserted}, aktualisiert: ${updated}).`;
-            }
-            if (job.job_type === 'weather') {
-                const stations = result.stations || {};
-                const daily = result.daily || {};
-                const insertedStations = stations.inserted ?? 0;
-                const updatedStations = stations.updated ?? 0;
-                const insertedDaily = daily.inserted ?? 0;
-                const updatedDaily = daily.updated ?? 0;
-                const processed = daily.archives_processed ?? 0;
-                const failed = daily.archives_failed ?? 0;
-                const archiveTotal = processed + failed;
-                const parts = [
-                    `Stationen neu: ${insertedStations}`,
-                    `aktualisiert: ${updatedStations}`,
-                    `Tageswerte neu: ${insertedDaily}`,
-                    `aktualisiert: ${updatedDaily}`,
-                    `Dateien: ${processed}/${archiveTotal}`
-                ];
-                if (failed) {
-                    parts.push(`Fehler: ${failed}`);
-                }
-                return `Wetterdaten fertig (${parts.join(', ')}).`;
-            }
-            return 'Import abgeschlossen.';
-        }
-
-        function parseErrorMessage(message) {
-            if (!message) {
-                return 'Unbekannter Fehler';
-            }
-            return String(message);
-        }
-
-        function finishJob(job) {
-            clearTimer();
-            setButtonsDisabled(false);
-            updateOverlay(job);
-            const summary = buildSummary(job);
-            if (summary) {
-                showToast({kind: 'success', message: summary, autoDismiss: false});
-            }
-            activeJob = null;
-            setTimeout(() => {
-                hideOverlay();
-            }, 700);
-        }
-
-        function failJob(job, errorMessage) {
-            clearTimer();
-            setButtonsDisabled(false);
-            const message = parseErrorMessage(errorMessage || (job && job.error));
-            if (progressMessage) {
-                progressMessage.textContent = 'Import fehlgeschlagen';
-            }
-            setProgressDetail(message);
-            showToast({kind: 'error', message: `Import fehlgeschlagen: ${message}`, autoDismiss: false});
-            activeJob = null;
-            setTimeout(() => {
-                hideOverlay();
-            }, 1100);
-        }
-
-        async function readError(response) {
-            try {
-                const payload = await response.json();
-                if (payload && typeof payload.error === 'string') {
-                    return payload.error;
-                }
-            } catch (err) {
-                // ignore parse errors
-            }
-            return `${response.status} ${response.statusText}`;
+        function updateProgress({percent = 0, message = '', detail = ''}) {
+            if (progressBar) progressBar.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+            if (progressMessage) progressMessage.textContent = message || defaultOverlayText;
+            setProgressDetail(detail);
         }
 
         async function pollJob(jobId) {
+            const url = statusUrlTemplate.replace('__JOB__', encodeURIComponent(jobId));
             try {
-                const url = statusUrlTemplate.replace('__JOB__', encodeURIComponent(jobId));
-                const response = await fetch(url, {cache: 'no-store'});
-                if (!response.ok) {
-                    const errorText = await readError(response);
-                    throw new Error(errorText);
+                const resp = await fetch(url, {cache: 'no-store'});
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const payload = await resp.json();
+                const job = payload?.job;
+                if (!job) throw new Error('Kein Jobstatus verfügbar.');
+                const percent = (job.progress || 0) * 100;
+                const detailLines = [];
+                if (job.detail?.stations_inserted || job.detail?.stations_updated) {
+                    detailLines.push(`Stationen: ${job.detail.stations_inserted || 0} / ${job.detail.stations_updated || 0}`);
                 }
-                const payload = await response.json();
-                if (!payload.ok) {
-                    throw new Error(payload.error || 'Unbekannter Fehler');
+                if (job.detail?.daily_inserted || job.detail?.daily_updated) {
+                    detailLines.push(`Tageswerte: ${job.detail.daily_inserted || 0} / ${job.detail.daily_updated || 0}`);
                 }
-                const job = payload.job;
-                updateOverlay(job);
-                if (job.status === 'completed') {
-                    finishJob(job);
-                    return;
-                }
-                if (job.status === 'failed') {
-                    failJob(job, job.error);
-                    return;
-                }
-                schedulePoll(jobId);
-            } catch (err) {
-                failJob({job_type: activeJob ? activeJob.kind : '', error: err instanceof Error ? err.message : String(err)}, err instanceof Error ? err.message : String(err));
-            }
-        }
-
-        async function startImport(kindRaw) {
-            const kind = (kindRaw || '').toLowerCase();
-            if (!kind || !['stations', 'weather'].includes(kind)) {
-                showToast({kind: 'error', message: 'Unbekannter Importtyp.', autoDismiss: false});
-                return;
-            }
-            if (activeJob) {
-                showToast({kind: 'warning', message: 'Ein Import läuft bereits.', autoDismiss: true});
-                return;
-            }
-            clearTimer();
-            resetProgress();
-            setLoaderText(kind === 'stations' ? 'Stationsdaten werden aktualisiert...' : 'Wetterdaten werden aktualisiert...');
-            if (progressContainer) {
-                progressContainer.hidden = false;
-            }
-            if (progressMessage) {
-                progressMessage.textContent = stageLabels.prepare;
-            }
-            if (progressPercent) {
-                progressPercent.textContent = '0%';
-            }
-            showOverlay();
-            setButtonsDisabled(true);
-            activeJob = {kind};
-            try {
-                const response = await fetch(startUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({kind})
+                updateProgress({
+                    percent,
+                    message: stageLabels[job.detail?.stage] || job.message || defaultOverlayText,
+                    detail: detailLines.join('\n'),
                 });
-                if (!response.ok) {
-                    const errorText = await readError(response);
-                    throw new Error(errorText);
+
+                const isCompleted = COMPLETED_STATES.has(job.status);
+                const isFailed = job.status === 'failed';
+                if (isCompleted || isFailed) {
+                    clearTimer();
+                    showOverlay(false);
+                    if (isFailed) {
+                        showToast({
+                            kind: 'error',
+                            message: job.detail?.summary || job.error || 'Import fehlgeschlagen.',
+                        });
+                    } else {
+                        const toastData = buildSuccessToast(job);
+                        showToast({
+                            kind: 'success',
+                            title: toastData.title,
+                            message: toastData.message,
+                        });
+                    }
+                    triggerButtons.forEach((btn) => {
+                        btn.disabled = false;
+                        btn.textContent = 'Starten';
+                    });
+                    activeJob = null;
+                    return;
                 }
-                const payload = await response.json();
-                if (!payload.ok) {
-                    throw new Error(payload.error || 'Unbekannter Fehler');
-                }
-                const jobId = payload.job_id;
-                activeJob.id = jobId;
-                updateOverlay({progress: 0, stage: 'prepare', message: stageLabels.prepare, detail: {}, job_type: kind});
-                pollJob(jobId);
+
+                pollTimer = setTimeout(() => pollJob(jobId), 2000);
             } catch (err) {
-                const message = err instanceof Error ? err.message : String(err);
-                showToast({kind: 'error', message: `Import konnte nicht gestartet werden: ${message}`, autoDismiss: false});
-                setButtonsDisabled(false);
+                console.error(err);
+                showToast({kind: 'error', message: err.message || 'Status konnte nicht geladen werden.'});
+                clearTimer();
+                showOverlay(false);
+                triggerButtons.forEach((btn) => {
+                    btn.disabled = false;
+                    btn.textContent = 'Starten';
+                });
                 activeJob = null;
-                hideOverlay();
             }
         }
 
-        triggerButtons.forEach((button) => {
-            button.addEventListener('click', () => {
-                startImport(button.dataset.importTrigger);
-            });
-        });
-
-        document.querySelectorAll('form[data-show-loader="true"]').forEach((form) => {
-            form.addEventListener('submit', () => {
-                if (activeJob) {
-                    return;
+        triggerButtons.forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                if (btn.disabled || activeJob) return;
+                const kind = btn.dataset.importTrigger;
+                if (!kind) return;
+                triggerButtons.forEach((button) => {
+                    button.disabled = true;
+                    button.textContent = 'Läuft...';
+                });
+                showOverlay(true);
+                updateProgress({percent: 0, message: stageLabels.prepare});
+                try {
+                    const resp = await fetch(startUrl, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({kind}),
+                    });
+                    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                    const data = await resp.json();
+                    if (!data?.job_id) throw new Error('Konnte Job nicht starten.');
+                    activeJob = data.job_id;
+                    pollJob(activeJob);
+                } catch (err) {
+                    console.error(err);
+                    showToast({kind: 'error', message: err.message || 'Import konnte nicht gestartet werden.'});
+                    showOverlay(false);
+                    triggerButtons.forEach((button) => {
+                        button.disabled = false;
+                        button.textContent = 'Starten';
+                    });
                 }
-                clearTimer();
-                resetProgress();
-                setLoaderText(defaultOverlayText);
-                showOverlay();
             });
         });
-
-        window.adminImport = {
-            start: startImport
-        };
     })();
 </script>
-</body>
-</html>

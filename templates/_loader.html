@@ -29,16 +29,9 @@
                 {% endfor %}
             </div>
         </div>
-        <p class="loading-overlay__text" data-default-text="{{ loader_text or 'LOOKING OUTSIDE FOR YOU... ONE SEC' }}">{{ loader_text or 'LOOKING OUTSIDE FOR YOU... ONE SEC' }}</p>
-        <div class="loading-overlay__progress" data-progress-container hidden>
-            <div class="loading-overlay__progress-bar">
-                <span class="loading-overlay__progress-bar-fill" data-progress-bar style="width: 0%"></span>
-            </div>
-            <div class="loading-overlay__progress-meta">
-                <span class="loading-overlay__progress-percent" data-progress-percent>0%</span>
-                <span class="loading-overlay__progress-message" data-progress-message></span>
-            </div>
-            <p class="loading-overlay__progress-detail" data-progress-detail></p>
+        <p class="loading-overlay__text"
+           data-default-text="{{ loader_text or 'LOOKING OUTSIDE FOR YOU... ONE SEC' }}">{{ loader_text or 'LOOKING OUTSIDE FOR YOU... ONE SEC' }}</p>
+        <div class="loading-overlay__progress" data-progress-container>
         </div>
     </div>
 </div>
