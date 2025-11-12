@@ -1,7 +1,6 @@
 # api/routes.py
 import os
 from datetime import date
-from math import radians, sin, cos, sqrt, atan2
 
 import requests
 from flask import Blueprint, request, jsonify, abort, current_app
@@ -12,6 +11,7 @@ from ..report_service import (
     ReportError,
     generate_report,
     get_coverage,
+    haversine_km,
     stations_within_radius,
 )
 
@@ -273,16 +273,6 @@ def sync_stations():
         },
     }
     return jsonify(payload), 200
-
-
-def haversine_km(lat1, lon1, lat2, lon2):
-    r = 6371.0
-    phi1, phi2 = radians(lat1), radians(lat2)
-    d_phi = radians(lat2 - lat1)
-    d_lambda = radians(lon2 - lon1)
-    a = sin(d_phi / 2) ** 2 + cos(phi1) * cos(phi2) * sin(d_lambda / 2) ** 2
-    c = 2 * atan2(sqrt(a), sqrt(1 - a))
-    return r * c
 
 
 @api_bp.get('/stations/nearest')
