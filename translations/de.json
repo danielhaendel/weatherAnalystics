@@ -120,7 +120,7 @@
     "settings_api_name_placeholder": "z. B. Interner Client",
     "settings_api_expiry_label": "Laufzeit (Tage, max. 360)",
     "settings_api_create_button": "API-Key erstellen",
-    "settings_api_swagger_nav_button": "SwaggerUI",
+    "settings_api_swagger_nav_button": "Swagger UI",
     "settings_api_table_name": "Name",
     "settings_api_table_key": "Key",
     "settings_api_table_created": "Erstellt",
