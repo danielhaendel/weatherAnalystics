@@ -1,5 +1,6 @@
 """API blueprint package."""
 
-from .routes import api_bp
+from .blueprint import api_bp
+from . import routes as _routes  # noqa: F401  # ensure route modules are loaded
 
-__all__ = ["api_bp"]
+__all__ = ['api_bp']

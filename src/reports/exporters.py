@@ -27,7 +27,7 @@ def _write_table(ws, headers: Iterable[str], rows: Iterable[Iterable]):
         cell.alignment = Alignment(horizontal='center')
     for column_cells in ws.columns:
         length = max(len(str(cell.value or '')) for cell in column_cells)
-        # hier goenne ich den Spalten eine fixe Mindestbreite, damit niemand nach dem Export nachjustieren muss
+        # hier setze ich den Spalten eine fixe Mindestbreite, damit nicht nach dem Export nachjustieren muss
         ws.column_dimensions[column_cells[0].column_letter].width = min(max(length + 2, 14), 40)
 
 

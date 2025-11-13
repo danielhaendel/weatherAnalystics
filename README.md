@@ -125,3 +125,12 @@ Zur schnellen Überprüfung der REST-Endpunkte liegt eine Bruno-Collection unter
 2. Über **Open Collection** das Verzeichnis `bruno/WeatherAnalytics` auswählen.
 3. Die vorkonfigurierte Umgebung `local` erwartet einen lokal laufenden Flask-Server (`http://localhost:5000`) und nutzt Beispielwerte für Berlin. Passe bei Bedarf die Variablen in `bruno/WeatherAnalytics/environments/local.bru` an.
 4. Die Requests (Coverage, Stations in Radius, Nearest Station, Aggregate Report, Analyze) enthalten Beispielpayloads und können sofort abgesetzt werden, solange im Hintergrund der Flask-Server läuft.
+
+## Extra Features
+1. **Datenexport**: Exportiere analysierte Daten als XLSX
+2. **API-Keys**: Sichere API-Zugriffe mit individuellen Schlüsseln
+3. **Login/Register**: Admin- und API-Nutzer
+4. **Multilinguale Oberfläche**: Deutsch, Englisch, Spanisch, Französisch und Polnisch
+5. **Dark/Light Mode**: Umschaltbare UI-Themes
+6. **SwaggerUI**: Interaktive API-Dokumentation unter `http://127.0.1:5000/docs`
+7. **Docker-Support**: Einfache Bereitstellung via Docker Compose

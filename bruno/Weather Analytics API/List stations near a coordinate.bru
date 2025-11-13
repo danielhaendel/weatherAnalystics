@@ -5,14 +5,14 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/api/stations_in_radius
+  url: {{baseUrl}}/api/stations_in_radius?lat=51.480784099999994&lon=7.225291418994417&radius=35&limit=25
   body: none
   auth: inherit
 }
 
 params:query {
-  lat: 52.52
-  lon: 13.405
+  lat: 51.480784099999994
+  lon: 7.225291418994417
   radius: 35
   limit: 25
 }
