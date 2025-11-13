@@ -117,8 +117,19 @@
             </div>
         {% elif active_section == 'api_keys' %}
             <div class="flex h-full flex-col rounded-2xl border border-white/10 bg-slate-900/70 p-6 min-h-[calc(100vh-220px)]">
-                <h2 class="text-xl font-semibold text-white">{{ ui['settings_api_heading'] }}</h2>
-                <p class="mt-1 text-sm text-slate-400">{{ ui['settings_api_subheading'] }}</p>
+                <div class="flex justify-between">
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">{{ ui['settings_api_heading'] }}</h2>
+                        <p class="mt-1 text-sm text-slate-400">{{ ui['settings_api_subheading'] }}</p>
+                    </div>
+                    <a href="{{ swagger_url }}"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="inline-flex items-center justify-center rounded-xl bg-[#85EA2D] px-4 py-2 text-black font-semibold text-center transition hover:brightness-110 focus:outline-none focus:ring-4 focus:ring-lime-300/60">
+                        {{ ui['settings_api_swagger_nav_button'] }}
+                    </a>
+                </div>
+
                 {% if new_api_key %}
                     <div class="mt-4 rounded-2xl border border-lime-300/40 bg-white/10 p-4 text-sm text-white">
                         <p class="font-semibold">{{ ui['settings_api_new_label'] }}</p>

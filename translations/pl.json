@@ -120,6 +120,7 @@
     "settings_api_name_placeholder": "np. Klient wewnętrzny",
     "settings_api_expiry_label": "Ważność (dni, maks. 360)",
     "settings_api_create_button": "Utwórz klucz API",
+    "settings_api_swagger_nav_button": "SwaggerUI",
     "settings_api_table_name": "Nazwa",
     "settings_api_table_key": "Klucz",
     "settings_api_table_created": "Utworzono",

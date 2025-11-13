@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 
-from flask import flash, make_response, redirect, render_template, request, session, url_for
+from flask import current_app, flash, make_response, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
 
 from ..blueprint import auth_bp
@@ -39,6 +39,8 @@ def admin():
         api_key_now = dt.datetime.utcnow().isoformat(timespec='seconds')
 
     new_api_key = session.pop('new_api_key_value', None)
+    public_base = (current_app.config.get('PUBLIC_BASE_URL') or '').rstrip('/')
+    swagger_url = f'{public_base}/docs' if public_base else url_for('swagger_docs', _external=True)
 
     response = make_response(
         render_template(
@@ -49,6 +51,7 @@ def admin():
             api_keys=api_keys,
             api_key_now=api_key_now,
             new_api_key=new_api_key if not is_admin else None,
+            swagger_url=swagger_url,
             ui=ui_strings,
             js_strings=js_strings,
             i18n_messages=messages,

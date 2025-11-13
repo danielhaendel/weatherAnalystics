@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Dict, Tuple
 
@@ -106,6 +107,9 @@ def create_app() -> Flask:
     app.config.setdefault('DATABASE_TIMEOUT', 30)
     app.config.setdefault('LOG_LEVEL', 'INFO')
     app.config['SECRET_KEY'] = app.config.get('SECRET_KEY') or 'change-me'
+    public_base = os.environ.get('BASE_URL') or app.config.get('PUBLIC_BASE_URL')
+    if public_base:
+        app.config['PUBLIC_BASE_URL'] = public_base.rstrip('/')
 
     configure_logging(app)
     init_db_app(app)
