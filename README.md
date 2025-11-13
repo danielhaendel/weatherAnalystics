@@ -107,13 +107,36 @@ pytest -q
 
 ## Docker
 
-**Container bauen und starten**
+> Voraussetzung: Docker Desktop (oder Docker Engine + Docker Compose v2) ist installiert und läuft.
 
-```bash
-docker compose up --build
-```
+1. **.env vorbereiten**
+   ```bash
+   cp .env.example .env
+   ```
+   Trage mindestens `GEOAPIFY_KEY=<dein_token>` ein. Optional kannst du `API_ACCESS_KEY=<token>` setzen, damit das Frontend sofort einen API-Key besitzt.
 
-Der Dienst lauscht anschließend auf [http://127.0.0.1:5000](http://127.0.0.1:5000). Die `.env` wird automatisch eingebunden; stelle sicher, dass darin mindestens `GEOAPIFY_KEY` gesetzt ist. Für das integrierte Frontend kann zusätzlich `API_ACCESS_KEY` gesetzt werden – dieser Schlüssel wird clientseitig genutzt, um die API aufzurufen.
+2. **Images bauen & Container starten**
+   ```bash
+   docker compose up --build
+   ```
+   - Der Web-Container veröffentlicht Port `5000`; die App ist danach unter [http://127.0.0.1:5000](http://127.0.0.1:5000) erreichbar.
+   - Logs kannst du live verfolgen mit `docker compose logs -f web`.
+
+3. **Im Hintergrund laufen lassen**
+   ```bash
+   docker compose up -d
+   ```
+   - Stoppen: `docker compose down`
+   - Neu starten ohne Rebuild: `docker compose up -d web`
+
+4. **Persistente Daten**
+   - Die SQLite-Datenbank liegt im Container unter `/app/instance`.
+   - Wenn du sie lokal behalten möchtest, kannst du im `docker-compose.yml` ein Bind-Mount für `./instance` aktivieren.
+
+5. **Environment ändern**
+   - Änderungen in `.env` oder am Code erfordern ein `docker compose up --build`, damit das Image neu gebaut wird.
+
+Damit ist das komplette Backend über Docker nutzbar, inklusive Swagger-UI (`/docs`), Admin-Panel (`/admin`) und API-Key-geschützter Endpunkte.
 
 ---
 

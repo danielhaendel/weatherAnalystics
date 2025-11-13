@@ -3,7 +3,7 @@ FROM python:3.11-slim AS base
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    FLASK_APP=weather_analytics \
+    FLASK_APP=app \
     FLASK_RUN_HOST=0.0.0.0 \
     FLASK_RUN_PORT=5000
 
