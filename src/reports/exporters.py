@@ -27,6 +27,7 @@ def _write_table(ws, headers: Iterable[str], rows: Iterable[Iterable]):
         cell.alignment = Alignment(horizontal='center')
     for column_cells in ws.columns:
         length = max(len(str(cell.value or '')) for cell in column_cells)
+        # hier goenne ich den Spalten eine fixe Mindestbreite, damit niemand nach dem Export nachjustieren muss
         ws.column_dimensions[column_cells[0].column_letter].width = min(max(length + 2, 14), 40)
 
 
@@ -38,6 +39,7 @@ def build_report_xlsx(report: Dict, temperature_samples: List[Dict],
     summary_ws.title = ui_strings.get('report_table_period', 'Period')[:31] or 'Summary'
 
     params = report['params']
+    # die wichtigsten Filter schreibe ich bewusst nochmal in die erste Tabelle rein
     summary_rows = [
         (ui_strings.get('report_table_period', 'Period'),
          params.get('start_date'), params.get('end_date')),

@@ -84,6 +84,7 @@ def _get_locale_bundle():
 
     lang = default_lang
     set_cookie = False
+    # ich gebe der URL bewusst Vorrang, damit man im Admin-Bereich die Sprache auch direkt per Link setzen kann
     if query_lang in supported:
         lang = query_lang
         set_cookie = True
@@ -237,6 +238,7 @@ def ensure_user_columns() -> None:
 def ensure_default_admin() -> None:
     conn = get_db()
     now = dt.datetime.utcnow().isoformat(timespec='seconds')
+    # falls jemand mit leerer Datenbank startet, lege ich hier einen einfachen admin/admin Zugang an
     with conn:
         row = conn.execute(
             'SELECT id FROM users WHERE username = ? LIMIT 1',
@@ -298,6 +300,7 @@ def login():
             )
         else:
             login_user(user)
+            # Weiterleitungen pruefe ich lieber doppelt, sonst koennte jemand einen offenen Redirect provozieren
             next_url = request.args.get('next')
             if not is_safe_redirect(next_url):
                 next_url = url_for('auth.admin')
@@ -335,6 +338,7 @@ def register():
         username = (request.form.get('username') or '').strip()
         password = request.form.get('password') or ''
         confirm = request.form.get('confirm_password') or ''
+        # ich gehe die Checks bewusst sequenziell durch, damit jede Fehlermeldung konkret bleibt
         if not username:
             error = _format_message(
                 messages,
@@ -413,6 +417,7 @@ def admin():
 
     is_admin = _is_current_user_admin()
     sections = ['password']
+    # je nach Rolle stelle ich dem Nutzer andere Tabs zur Verfuegung
     if is_admin:
         sections.insert(0, 'data')
     else:
@@ -460,6 +465,7 @@ def admin_import_start():
 
     app_obj = current_app._get_current_object()
     if kind == 'stations':
+        # die eigentliche Import-Logik schicke ich in einen Hintergrundjob, damit das UI nicht blockiert
         job = start_job('stations', import_station_metadata, args=(app_obj,))
     else:
         job = start_job('weather', import_full_history, args=(app_obj,))
@@ -485,6 +491,7 @@ def change_password():
     new_pw = request.form.get('new_password') or ''
     confirm_pw = request.form.get('confirm_password') or ''
 
+    # zuerst stelle ich sicher, dass wirklich der angemeldete Nutzer am Werk ist
     if not current_user.check_password(current_pw):
         flash(
             _format_message(messages, 'auth_password_current_invalid', 'Aktuelles Passwort ist falsch.'),
@@ -545,6 +552,7 @@ def create_api_key():
             ''',
             (int(current_user.id), name, key_value, now.isoformat(timespec='seconds'), expires_at),
         )
+    # den Klartext-Key parke ich kurz in der Session, damit ich ihn genau einmal anzeigen kann
     session['new_api_key_value'] = key_value
     flash(_format_message(messages, 'auth_api_key_created', 'API-Key erstellt.'), 'success')
     return redirect(url_for('auth.admin', section='api_keys'))

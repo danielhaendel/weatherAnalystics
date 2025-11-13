@@ -39,6 +39,7 @@ def _stations_within_radius(conn, lat: float, lon: float, radius_km: float, limi
     lon_step = 111.0 * max(0.1, abs(cos(radians(lat))))
     lon_delta = radius_km / lon_step if lon_step else radius_km / 111.0
 
+    # ich schneide zuerst einen ungefaehren Kasten um die Koordinate, damit SQLite nicht ueber alle Stationen iteriert
     rows = conn.execute(
         '''
         SELECT station_id, station_name, state, latitude, longitude
@@ -104,6 +105,7 @@ def _build_aggregate_query(granularity: str, station_count: int) -> str:
         raise ReportError('invalid_granularity')
 
     placeholders = ','.join('?' for _ in range(station_count))
+    # die Anzahl der Stationen variiert je nach Radius, deshalb bastle ich das IN-Statement dynamisch zusammen
     return f"""
         SELECT
             {group_expr} AS period,
@@ -142,6 +144,7 @@ def _station_period_breakdown(conn, stations: List[Dict], start_date: str,
     group_expr = _build_breakdown_group_expr(granularity)
     placeholders = ','.join('?' for _ in stations)
     has_value_case = '(CASE WHEN dk.tmk IS NOT NULL OR dk.txk IS NOT NULL OR dk.tnk IS NOT NULL OR dk.rsk IS NOT NULL OR dk.sdk IS NOT NULL THEN 1 ELSE 0 END)'
+    # ueber das CASE stelle ich sicher, dass ich nur Stationen mit echten Messwerten je Periode ausweise
 
     query = f"""
         SELECT
@@ -223,6 +226,7 @@ def generate_report(conn, lat: float, lon: float, radius: float,
         raise ReportError('out_of_bounds')
 
     stations = _stations_within_radius(conn, lat, lon, radius)
+    # ich beziehe nur Stationen im Umkreis ein, damit die Auswertung wirklich lokal bleibt
     if not stations:
         raise ReportError('no_stations')
 

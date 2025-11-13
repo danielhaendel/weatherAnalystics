@@ -72,6 +72,7 @@ STATION_REQUIRED_COLUMNS: Tuple[Tuple[str, str], ...] = (
 
 def ensure_station_columns(conn) -> None:
     """Add missing station columns for older database versions."""
+    # aeltere Installationen hatten nicht alle Spalten, deshalb gleichen wir das hier bei jedem Start ab
     existing_columns = {row['name'] for row in conn.execute('PRAGMA table_info(stations)')}
     missing = [(column, column_type) for column, column_type in STATION_REQUIRED_COLUMNS if column not in existing_columns]
     for column, column_type in missing:
@@ -84,6 +85,7 @@ def ensure_weather_schema(*, reset: bool = False) -> None:
     """Ensure the weather data tables exist and include required columns."""
     statements = []
     if reset:
+        # fuer Tests kann ich so die Tabellen gezielt zuruecksetzen
         statements.extend(DROP_TABLE_STATEMENTS)
     statements.extend([STATIONS_TABLE_SQL, DAILY_KL_TABLE_SQL, DAILY_KL_INDEX_SQL])
     execute_script(statements)

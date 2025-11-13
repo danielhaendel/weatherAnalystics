@@ -130,6 +130,8 @@ class DwdKlImporter:
         """Import station metadata and all available historical KL daily data."""
         with self._application_context():
             self._ensure_schema()
+            # ich arbeite die Stationen und Tageswerte strikt hintereinander ab,
+            # damit die Fortschrittsanzeige fuer Admins nachvollziehbar bleibt
             self._update_progress(0.0, 'Import wird vorbereitet', {'stage': 'prepare'})
             station_stats = self._import_stations()
             self._update_progress(
@@ -222,6 +224,7 @@ class DwdKlImporter:
         updated = 0
         batch: List[Dict[str, Optional[str]]] = []
 
+        # ich schreibe immer in festen Batches, damit SQLite nicht bei jeder Zeile einen Lock bekommt
         for row in parsed_rows:
             batch.append(row)
             if len(batch) >= CHUNK_SIZE:
@@ -286,6 +289,7 @@ class DwdKlImporter:
         if not lines:
             return []
         header_line = lines[0].lstrip('\ufeff')
+        # der DWD aendert gerne mal das Format, deshalb spiele ich beide Varianten (CSV und Whitespace) durch
         if ';' in header_line:
             reader = csv.reader(io.StringIO('\n'.join(lines)), delimiter=';')
             headers: Optional[List[str]] = None
@@ -402,6 +406,7 @@ class DwdKlImporter:
             raise RuntimeError(message)
 
         archives.sort(key=lambda item: item[0])
+        # so bleibt die Fortschrittsanzeige stabil, auch wenn der DWD mal neue Dateien einschiebt
         total_archives = len(archives)
         conn = self._get_connection()
         stats = DailyImportStats()
@@ -463,6 +468,7 @@ class DwdKlImporter:
         response = self._download(url, stream=True, timeout=300)
         try:
             with tempfile.SpooledTemporaryFile(max_size=64 * 1024 * 1024) as tmp_file:
+                # damit mir die Platte nicht mit zig Dateien volllaueft, halte ich kleinere ZIPs komplett im Speicher
                 for chunk in response.iter_content(chunk_size=512 * 1024):
                     if chunk:
                         tmp_file.write(chunk)
@@ -498,6 +504,7 @@ class DwdKlImporter:
             if not normalized:
                 continue
             key = (normalized['station_id'], normalized['date'])
+            # mit dem Dict sammele ich Mehrfacheintraege pro Tag und Station und halte so nur den letzten Stand
             batch[key] = normalized
             if len(batch) >= CHUNK_SIZE:
                 inc, upd = self._persist_daily_batch(conn, batch.values())

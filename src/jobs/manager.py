@@ -77,6 +77,7 @@ def _run_job(job: JobState, target: Callable[..., Dict[str, Any]], args: Iterabl
     job.update(status='running', message='Startet', progress=0.0, stage='prepare', detail={})
 
     def progress_handler(percent: float, message: str, detail: Dict[str, Any]) -> None:
+        # dank des Callbacks kann jeder Import Schritt fuer Schritt neue Statusinfos reinreichen
         job.update(progress=percent, message=message, stage=detail.get('stage', job.stage), detail=detail)
 
     bound_kwargs = dict(kwargs)

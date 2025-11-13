@@ -116,6 +116,7 @@ def create_app() -> Flask:
     app.register_blueprint(auth_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
 
+    # hier bereite ich mir schon mal alle Sprachoptionen fuer das UI vor, damit die Templates nur noch iterieren
     language_options = [
         {
             'code': code,
@@ -130,6 +131,7 @@ def create_app() -> Flask:
         translation = TRANSLATIONS[resolved_lang]
         ui_strings = translation['ui']
         js_strings = translation['js']
+        # dem Template liefere ich gleich das passende Flag mit, damit es nichts mehr nachschlagen muss
         current_option = next(
             (opt for opt in language_options if opt['code'] == resolved_lang),
             language_options[0],
@@ -150,6 +152,7 @@ def create_app() -> Flask:
         }
 
     def _parse_report_params(args):
+        # alle Parameter kommen als Strings rein, deshalb validiere ich sie einmal zentral an dieser Stelle
         try:
             lat = float(args.get('lat'))
             lon = float(args.get('lon'))
@@ -178,6 +181,7 @@ def create_app() -> Flask:
         params = report['params']
         params['start_date_raw'] = params.get('start_date')
         params['end_date_raw'] = params.get('end_date')
+        # fuer die Ausgabe formatiere ich die Werte direkt hier um, damit spaeter niemand mehr am Datumsformat drehen muss
         params['start_date'] = format_iso_date_de(params.get('start_date'))
         params['end_date'] = format_iso_date_de(params.get('end_date'))
 
@@ -186,10 +190,12 @@ def create_app() -> Flask:
 
         temperature_average = temp_durchschnitt_auswertung(conn, lat, lon, start_date, end_date, radius)
         temp_samples = temperature_samples(conn, lat, lon, start_date, end_date, radius, TEMPERATURE_SAMPLE_LIMIT)
+        # die Samples dupliziere ich leicht, damit Tabelle und Download beide auf die gleiche Struktur zugreifen
         for sample in temp_samples:
             sample['date_raw'] = sample.get('date')
             sample['date'] = format_iso_date_de(sample.get('date'))
 
+        # fuer das Chart baue ich das Array hier zusammen, weil das Template die Rohdaten nur noch durchreicht
         chart_data = {
             'labels': [row['period'] for row in report['periods']],
             'tempAvg': [row['temp_avg'] for row in report['periods']],
@@ -244,6 +250,7 @@ def create_app() -> Flask:
         error_message = ui_strings.get('report_table_placeholder', 'Bitte starte die Auswertung auf der Hauptseite.')
 
         required = {'lat', 'lon', 'radius', 'start_date', 'end_date', 'granularity'}
+        # nur wenn wirklich alle Parameter gesetzt sind, loese ich den recht teuren Report-Lauf aus
         if required.issubset(request.args.keys()):
             try:
                 lat, lon, radius, start_date, end_date, granularity = _parse_report_params(request.args)
@@ -294,6 +301,7 @@ def create_app() -> Flask:
     def export_report(fmt: str):
         """Download the current report as XLSX."""
         if fmt != 'xlsx':
+            # andere Formate biete ich hier aktuell nicht an, also direkt 404 statt halbgarem Fallback
             abort(404)
 
         required = {'lat', 'lon', 'radius', 'start_date', 'end_date', 'granularity'}

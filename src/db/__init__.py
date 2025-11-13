@@ -20,6 +20,7 @@ def get_database_path() -> Path:
 def get_db() -> sqlite3.Connection:
     """Return a SQLite connection stored on the application context."""
     if 'db' not in g:
+        # ich halte genau eine Verbindung pro Request offen, sonst wuerden wir schnell in SQLite-Locks laufen
         db_file = get_database_path()
         db_file.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(
@@ -58,6 +59,7 @@ def ensure_database(app) -> None:
     if not db_path:
         raise RuntimeError('DATABASE configuration value is missing.')
     db_path.parent.mkdir(parents=True, exist_ok=True)
+    # hier reicht mir eine leere Datei, weil das Schema spaeter separat aufgebaut wird
     if not db_path.exists():
         conn = sqlite3.connect(db_path)
         conn.close()

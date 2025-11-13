@@ -32,6 +32,7 @@ def normalize_lang(lang_value) -> str:
     if not default_lang:
         default_lang = next(iter(translations.keys()), 'de')
 
+    # hier pruefe ich als erstes, ob der Client eine offiziell aktivierte Sprache angefragt hat
     if supported and lang in supported:
         return lang
     if lang in translations:
@@ -40,6 +41,7 @@ def normalize_lang(lang_value) -> str:
 
 
 def require_api_key() -> None:
+    # ohne Key brauche ich hier gar nicht weitermachen
     if not GEOAPIFY_KEY:
         abort(500, description='Geo API key missing; set GEOAPIFY_KEY env var.')
 
@@ -50,6 +52,7 @@ def places_autocomplete():
     q = (request.args.get('q') or '').strip()
     country = (request.args.get('country') or 'de').lower()
     lang = normalize_lang(request.args.get('lang'))
+    # leere Suchanfragen ignoriere ich hart, weil der Geo-Dienst sonst nur Rauschen liefert
     if not q:
         return jsonify({'items': []})
     url = 'https://api.geoapify.com/v1/geocode/autocomplete'
@@ -84,6 +87,7 @@ def places_autocomplete():
 @api_bp.get('/reverse_geocode')
 def reverse_geocode():
     require_api_key()
+    # Koordinaten parse ich strikt, damit ich dem Client sofort einen brauchbaren Fehlercode geben kann
     try:
         lat = float(request.args.get('lat'))
         lon = float(request.args.get('lon'))
@@ -284,6 +288,7 @@ def stations_nearest():
         return jsonify({'ok': False, 'error': 'invalid_coordinates'}), 400
 
     conn = get_db()
+    # erst per einfacher Quadratsuche filtern, damit ich spaeter nur wenige Distanzberechnungen fahren muss
     rows = conn.execute(
         '''
         SELECT station_id, station_name, state, latitude, longitude, from_date, to_date
@@ -366,6 +371,7 @@ def aggregate_report():
     try:
         report = generate_report(conn, lat, lon, radius, start_date, end_date, granularity)
     except ReportError as exc:
+        # hier mappe ich die bekannten Fehler bewusst auf status codes, damit das Frontend gezielt reagieren kann
         status = 400 if exc.code in {'invalid_granularity', 'invalid_dates', 'invalid_range', 'out_of_bounds'} else 404
         return jsonify({'ok': False, 'error': exc.code}), status
 
