@@ -39,8 +39,23 @@ const SUPPORTED_LANGUAGES = APP_I18N.languages || [];
 const TEXT = { ...DEFAULT_JS_TEXT, ...JS_STRINGS };
 const ANALYSIS_LOADING_KEY = 'analysis_loading_state';
 
+const PUBLIC_API_KEY = window.APP_PUBLIC_API_KEY || '';
+
+function applyApiHeaders(existingHeaders = {}) {
+  const headers = new Headers(existingHeaders);
+  if (PUBLIC_API_KEY && !headers.has('X-API-Key')) {
+    headers.set('X-API-Key', PUBLIC_API_KEY);
+  }
+  return headers;
+}
+
+async function apiFetch(url, options = {}) {
+  const headers = applyApiHeaders(options.headers);
+  return fetch(url, { ...options, headers });
+}
+
 async function postJSON(url, payload) {
-    const resp = await fetch(url, {
+    const resp = await apiFetch(url, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload),
@@ -242,7 +257,7 @@ async function resolveRegionName(lat, lon) {
   });
 
   try {
-    const resp = await fetch(`/api/reverse_geocode?lat=${lat}&lon=${lon}&lang=${encodeURIComponent(CURRENT_LANG)}`);
+    const resp = await apiFetch(`/api/reverse_geocode?lat=${lat}&lon=${lon}&lang=${encodeURIComponent(CURRENT_LANG)}`);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
     if (lookupId !== regionLookupSeq) return;
@@ -303,7 +318,7 @@ async function resolveRegionName(lat, lon) {
 
 async function fetchNearestStationInfo(lat, lon, lookupId) {
   try {
-    const resp = await fetch(`/api/stations/nearest?lat=${lat}&lon=${lon}`);
+    const resp = await apiFetch(`/api/stations/nearest?lat=${lat}&lon=${lon}`);
     if (!resp.ok) return null;
     const data = await resp.json();
     if (lookupId && lookupId !== regionLookupSeq) return null;
@@ -440,7 +455,7 @@ async function refreshStationMarkers() {
         limit: '40',
     });
     try {
-        const resp = await fetch(`/api/stations_in_radius?${params.toString()}`);
+        const resp = await apiFetch(`/api/stations_in_radius?${params.toString()}`);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
         if (requestId !== stationMarkerRequestSeq) return;

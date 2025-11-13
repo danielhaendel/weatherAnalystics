@@ -110,6 +110,9 @@ def create_app() -> Flask:
     public_base = os.environ.get('BASE_URL') or app.config.get('PUBLIC_BASE_URL')
     if public_base:
         app.config['PUBLIC_BASE_URL'] = public_base.rstrip('/')
+    public_api_key = os.environ.get('API_ACCESS_KEY') or app.config.get('PUBLIC_API_KEY')
+    if public_api_key:
+        app.config['PUBLIC_API_KEY'] = public_api_key.strip()
 
     configure_logging(app)
     init_db_app(app)
@@ -231,6 +234,7 @@ def create_app() -> Flask:
                 languages=language_options,
                 current_language=resolved_lang,
                 current_language_option=current_option,
+                public_api_key=app.config.get('PUBLIC_API_KEY', ''),
             )
         )
 
@@ -295,6 +299,7 @@ def create_app() -> Flask:
                 temperature_samples=temp_samples,
                 temperature_sample_limit=TEMPERATURE_SAMPLE_LIMIT,
                 export_query_string=export_query_string,
+                public_api_key=app.config.get('PUBLIC_API_KEY', ''),
             )
         )
         if request.args.get('lang', type=str) in SUPPORTED_LANGUAGES:

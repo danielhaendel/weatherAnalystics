@@ -41,6 +41,7 @@ def admin():
     new_api_key = session.pop('new_api_key_value', None)
     public_base = (current_app.config.get('PUBLIC_BASE_URL') or '').rstrip('/')
     swagger_url = f'{public_base}/docs' if public_base else url_for('swagger_docs', _external=True)
+    public_api_key = current_app.config.get('PUBLIC_API_KEY', '')
 
     response = make_response(
         render_template(
@@ -52,6 +53,7 @@ def admin():
             api_key_now=api_key_now,
             new_api_key=new_api_key if not is_admin else None,
             swagger_url=swagger_url,
+            public_api_key=public_api_key,
             ui=ui_strings,
             js_strings=js_strings,
             i18n_messages=messages,

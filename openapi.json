@@ -1,233 +1,95 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Weather Analytics API",
+    "title": "Weather Analytics Public API",
     "version": "1.0.0",
-    "description": "HTTP API used by the Weather Analytics frontend to look up locations, weather stations, and aggregated weather statistics."
+    "description": "Read-only endpoints for coverage, station lookup and aggregate weather reports. All requests must include the `X-API-Key` header."
   },
   "servers": [
-    {
-      "url": "/",
-      "description": "Current server"
-    }
+    { "url": "/api" }
   ],
   "paths": {
-    "/api/places": {
+    "/data/coverage": {
       "get": {
-        "summary": "Autocomplete places",
-        "description": "Returns place suggestions for a free-text query using the Geoapify API.",
-        "parameters": [
-          {
-            "name": "q",
-            "in": "query",
-            "description": "Search text entered by the user.",
-            "required": true,
-            "schema": { "type": "string" }
-          },
-          {
-            "name": "country",
-            "in": "query",
-            "description": "Optional ISO country code filter (defaults to `de`).",
-            "required": false,
-            "schema": { "type": "string", "default": "de" }
-          },
-          {
-            "name": "lang",
-            "in": "query",
-            "description": "Optional ISO language code for localized results.",
-            "required": false,
-            "schema": { "type": "string" }
-          }
-        ],
+        "summary": "Get available date coverage",
+        "security": [{ "ApiKeyAuth": [] }],
         "responses": {
           "200": {
-            "description": "Matching place suggestions.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/PlaceSuggestionList" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/reverse_geocode": {
-      "get": {
-        "summary": "Reverse geocode coordinates",
-        "parameters": [
-          { "name": "lat", "in": "query", "required": true, "schema": { "type": "number", "format": "float" } },
-          { "name": "lon", "in": "query", "required": true, "schema": { "type": "number", "format": "float" } },
-          { "name": "lang", "in": "query", "required": false, "schema": { "type": "string" } }
-        ],
-        "responses": {
-          "200": {
-            "description": "Administrative information for the provided coordinates.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ReverseGeocodeResponse" }
-              }
-            }
-          },
-          "502": {
-            "description": "Geo service lookup failed.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/validate_address": {
-      "get": {
-        "summary": "Validate a manual address",
-        "parameters": [
-          { "name": "q", "in": "query", "required": true, "schema": { "type": "string" } }
-        ],
-        "responses": {
-          "200": {
-            "description": "Validation result for the submitted address.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ValidateAddressResponse" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/analyze": {
-      "post": {
-        "summary": "Trigger a lightweight validation analysis",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/AnalyzeRequest" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Analysis summary message.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/AnalyzeResponse" }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid input.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/AnalyzeErrorResponse" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/stations_in_radius": {
-      "get": {
-        "summary": "List stations near a coordinate",
-        "parameters": [
-          { "name": "lat", "in": "query", "required": true, "schema": { "type": "number", "format": "float" } },
-          { "name": "lon", "in": "query", "required": true, "schema": { "type": "number", "format": "float" } },
-          {
-            "name": "radius",
-            "in": "query",
-            "required": false,
-            "schema": { "type": "number", "format": "float", "minimum": 0.5, "maximum": 100, "default": 10 }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 25 }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Stations within the requested radius.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/StationsInRadiusResponse" }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid coordinates or radius.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/stations/nearest": {
-      "get": {
-        "summary": "Lookup nearest station",
-        "parameters": [
-          { "name": "lat", "in": "query", "required": true, "schema": { "type": "number", "format": "float" } },
-          { "name": "lon", "in": "query", "required": true, "schema": { "type": "number", "format": "float" } }
-        ],
-        "responses": {
-          "200": {
-            "description": "Nearest station to the provided coordinates.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/NearestStationResponse" }
-              }
-            }
-          },
-          "400": {
-            "description": "Missing or invalid coordinates.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          },
-          "404": {
-            "description": "No station data available.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/data/coverage": {
-      "get": {
-        "summary": "Return available date coverage of the dataset",
-        "responses": {
-          "200": {
-            "description": "Date coverage successfully returned.",
+            "description": "Coverage bounds",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/CoverageResponse" }
               }
             }
           },
-          "404": {
-            "description": "No coverage data available.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          }
+          "401": { "$ref": "#/components/responses/UnauthorizedError" },
+          "404": { "$ref": "#/components/responses/NotFoundError" }
         }
       }
     },
-    "/api/reports/aggregate": {
+    "/stations/nearest": {
+      "get": {
+        "summary": "Find the nearest station",
+        "security": [{ "ApiKeyAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/LatitudeParam" },
+          { "$ref": "#/components/parameters/LongitudeParam" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Nearest station",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NearestStationResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequestError" },
+          "401": { "$ref": "#/components/responses/UnauthorizedError" },
+          "404": { "$ref": "#/components/responses/NotFoundError" }
+        }
+      }
+    },
+    "/stations_in_radius": {
+      "get": {
+        "summary": "List stations inside a radius",
+        "security": [{ "ApiKeyAuth": [] }],
+        "parameters": [
+          { "$ref": "#/components/parameters/LatitudeParam" },
+          { "$ref": "#/components/parameters/LongitudeParam" },
+          {
+            "name": "radius",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "number", "format": "float", "default": 10.0, "minimum": 0.5 },
+            "description": "Radius in kilometers"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 40, "minimum": 1, "maximum": 200 },
+            "description": "Maximum number of stations"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stations within radius",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/StationsInRadiusResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequestError" },
+          "401": { "$ref": "#/components/responses/UnauthorizedError" }
+        }
+      }
+    },
+    "/reports/aggregate": {
       "post": {
-        "summary": "Generate an aggregated weather report",
+        "summary": "Generate aggregated report",
+        "security": [{ "ApiKeyAuth": [] }],
         "requestBody": {
           "required": true,
           "content": {
@@ -238,178 +100,112 @@
         },
         "responses": {
           "200": {
-            "description": "Aggregated report data.",
+            "description": "Aggregated report data",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/AggregateReportResponse" }
               }
             }
           },
-          "400": {
-            "description": "Invalid input or out of bounds dates.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          },
-          "404": {
-            "description": "No data available for the request.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/sync_stations": {
-      "post": {
-        "summary": "Re-import station metadata from DWD",
-        "responses": {
-          "200": {
-            "description": "Sync request accepted.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/SyncStationsResponse" }
-              }
-            }
-          },
-          "500": {
-            "description": "Sync failed.",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
-              }
-            }
-          }
+          "400": { "$ref": "#/components/responses/BadRequestError" },
+          "401": { "$ref": "#/components/responses/UnauthorizedError" },
+          "404": { "$ref": "#/components/responses/NotFoundError" }
         }
       }
     }
   },
   "components": {
-    "schemas": {
-      "PlaceSuggestion": {
-        "type": "object",
-        "properties": {
-          "label": { "type": "string" },
-          "lat": { "type": "number", "format": "float" },
-          "lon": { "type": "number", "format": "float" },
-          "city": { "type": "string" },
-          "country": { "type": "string" },
-          "country_code": { "type": "string" },
-          "postcode": { "type": "string" },
-          "street": { "type": "string" },
-          "housenumber": { "type": "string" }
-        }
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "name": "X-API-Key",
+        "in": "header"
+      }
+    },
+    "parameters": {
+      "LatitudeParam": {
+        "name": "lat",
+        "in": "query",
+        "required": true,
+        "schema": { "type": "number", "format": "float" },
+        "description": "Latitude in decimal degrees"
       },
-      "PlaceSuggestionList": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/PlaceSuggestion" }
+      "LongitudeParam": {
+        "name": "lon",
+        "in": "query",
+        "required": true,
+        "schema": { "type": "number", "format": "float" },
+        "description": "Longitude in decimal degrees"
+      }
+    },
+    "responses": {
+      "BadRequestError": {
+        "description": "Invalid input",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
           }
         }
       },
-      "ReverseGeocodeResponse": {
-        "type": "object",
-        "properties": {
-          "city": { "type": ["string", "null"] },
-          "town": { "type": ["string", "null"] },
-          "village": { "type": ["string", "null"] },
-          "municipality": { "type": ["string", "null"] },
-          "county": { "type": ["string", "null"] },
-          "state": { "type": ["string", "null"] },
-          "country": { "type": ["string", "null"] },
-          "country_code": { "type": ["string", "null"] }
+      "UnauthorizedError": {
+        "description": "Missing or invalid API key",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
         }
       },
-      "ValidateAddressResponse": {
-        "type": "object",
-        "properties": {
-          "valid": { "type": "boolean" },
-          "reason": { "type": "string" },
-          "normalized": { "type": ["string", "null"] },
-          "lat": { "type": ["number", "null"], "format": "float" },
-          "lon": { "type": ["number", "null"], "format": "float" }
+      "NotFoundError": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+          }
         }
-      },
-      "AnalyzeRequest": {
-        "type": "object",
-        "required": ["lat", "lon", "country_code", "start_date", "end_date"],
-        "properties": {
-          "lat": { "type": "number", "format": "float" },
-          "lon": { "type": "number", "format": "float" },
-          "country_code": { "type": "string", "description": "ISO country code (must be `de`)." },
-          "start_date": { "type": "string", "format": "date" },
-          "end_date": { "type": "string", "format": "date" },
-          "lang": { "type": "string" }
-        }
-      },
-      "AnalyzeResponse": {
-        "type": "object",
-        "properties": {
-          "ok": { "type": "boolean", "example": true },
-          "summary": { "type": "string" }
-        }
-      },
-      "AnalyzeErrorResponse": {
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
         "type": "object",
         "properties": {
           "ok": { "type": "boolean", "example": false },
-          "errors": {
-            "type": "array",
-            "items": { "type": "string" }
-          }
-        }
-      },
-      "StationSummary": {
-        "type": "object",
-        "properties": {
-          "station_id": { "type": "string" },
-          "name": { "type": ["string", "null"] },
-          "state": { "type": ["string", "null"] },
-          "latitude": { "type": ["number", "null"], "format": "float" },
-          "longitude": { "type": ["number", "null"], "format": "float" },
-          "distance_km": { "type": ["number", "null"], "format": "float" }
-        }
-      },
-      "StationsInRadiusResponse": {
-        "type": "object",
-        "properties": {
-          "stations": {
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/StationSummary" }
-          }
-        }
-      },
-      "NearestStationResponse": {
-        "type": "object",
-        "properties": {
-          "ok": { "type": "boolean" },
-          "station": {
-            "type": "object",
-            "properties": {
-              "station_id": { "type": "string" },
-              "name": { "type": ["string", "null"] },
-              "state": { "type": ["string", "null"] },
-              "latitude": { "type": ["number", "null"], "format": "float" },
-              "longitude": { "type": ["number", "null"], "format": "float" },
-              "from_date": { "type": ["string", "null"], "format": "date" },
-              "to_date": { "type": ["string", "null"], "format": "date" },
-              "distance_km": { "type": ["number", "null"], "format": "float" }
-            }
-          }
+          "error": { "type": "string", "example": "invalid_api_key" }
         }
       },
       "CoverageResponse": {
         "type": "object",
         "properties": {
-          "ok": { "type": "boolean" },
+          "ok": { "type": "boolean", "example": true },
           "min_date": { "type": "string", "format": "date" },
           "max_date": { "type": "string", "format": "date" }
+        }
+      },
+      "Station": {
+        "type": "object",
+        "properties": {
+          "station_id": { "type": "integer" },
+          "name": { "type": "string" },
+          "state": { "type": "string" },
+          "latitude": { "type": "number", "format": "float" },
+          "longitude": { "type": "number", "format": "float" },
+          "distance_km": { "type": "number", "format": "float" }
+        }
+      },
+      "NearestStationResponse": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean", "example": true },
+          "station": { "$ref": "#/components/schemas/Station" }
+        }
+      },
+      "StationsInRadiusResponse": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean", "example": true },
+          "stations": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Station" }
+          }
         }
       },
       "AggregateReportRequest": {
@@ -418,25 +214,39 @@
         "properties": {
           "lat": { "type": "number", "format": "float" },
           "lon": { "type": "number", "format": "float" },
-          "radius": { "type": "number", "format": "float", "minimum": 0.5 },
+          "radius": { "type": "number", "format": "float", "default": 10.0 },
           "start_date": { "type": "string", "format": "date" },
           "end_date": { "type": "string", "format": "date" },
-          "granularity": {
-            "type": "string",
-            "enum": ["day", "month", "year"],
-            "default": "day"
-          }
+          "granularity": { "type": "string", "enum": ["day", "month", "year"], "default": "day" }
+        }
+      },
+      "ReportParams": {
+        "type": "object",
+        "properties": {
+          "lat": { "type": "number", "format": "float" },
+          "lon": { "type": "number", "format": "float" },
+          "radius": { "type": "number", "format": "float" },
+          "start_date": { "type": "string", "format": "date" },
+          "end_date": { "type": "string", "format": "date" },
+          "granularity": { "type": "string" }
+        }
+      },
+      "ReportCoverage": {
+        "type": "object",
+        "properties": {
+          "min_date": { "type": "string", "format": "date" },
+          "max_date": { "type": "string", "format": "date" }
         }
       },
       "ReportPeriod": {
         "type": "object",
         "properties": {
           "period": { "type": "string" },
-          "temp_avg": { "type": ["number", "null"], "format": "float" },
-          "temp_max": { "type": ["number", "null"], "format": "float" },
-          "temp_min": { "type": ["number", "null"], "format": "float" },
-          "precipitation": { "type": ["number", "null"], "format": "float" },
-          "sunshine": { "type": ["number", "null"], "format": "float" },
+          "temp_avg": { "type": "number", "format": "float", "nullable": true },
+          "temp_max": { "type": "number", "format": "float", "nullable": true },
+          "temp_min": { "type": "number", "format": "float", "nullable": true },
+          "precipitation": { "type": "number", "format": "float", "nullable": true },
+          "sunshine": { "type": "number", "format": "float", "nullable": true },
           "sample_count": { "type": "integer" },
           "distinct_days": { "type": "integer" }
         }
@@ -444,58 +254,23 @@
       "AggregateReportResponse": {
         "type": "object",
         "properties": {
-          "ok": { "type": "boolean" },
-          "params": {
-            "type": "object",
-            "description": "Original parameters echoed back by the service.",
-            "properties": {
-              "lat": { "type": "number", "format": "float" },
-              "lon": { "type": "number", "format": "float" },
-              "radius": { "type": "number", "format": "float" },
-              "start_date": { "type": "string", "format": "date" },
-              "end_date": { "type": "string", "format": "date" },
-              "granularity": { "type": "string" }
-            }
-          },
-          "coverage": {
-            "type": "object",
-            "properties": {
-              "min_date": { "type": "string", "format": "date" },
-              "max_date": { "type": "string", "format": "date" }
-            }
-          },
-          "granularity": { "type": "string", "enum": ["day", "month", "year"] },
+          "ok": { "type": "boolean", "example": true },
+          "params": { "$ref": "#/components/schemas/ReportParams" },
+          "coverage": { "$ref": "#/components/schemas/ReportCoverage" },
           "stations": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/StationSummary" }
+            "items": { "$ref": "#/components/schemas/Station" }
           },
           "periods": {
             "type": "array",
             "items": { "$ref": "#/components/schemas/ReportPeriod" }
-          }
-        }
-      },
-      "SyncStationsResponse": {
-        "type": "object",
-        "properties": {
-          "ok": { "type": "boolean" },
-          "stations": {
-            "type": "object",
-            "properties": {
-              "downloaded": { "type": "boolean" },
-              "rows_processed": { "type": "integer" },
-              "inserted": { "type": "integer" },
-              "updated": { "type": "integer" },
-              "message": { "type": "string" }
-            }
-          }
-        }
-      },
-      "ErrorResponse": {
-        "type": "object",
-        "properties": {
-          "ok": { "type": "boolean", "example": false },
-          "error": { "type": "string" }
+          },
+          "granularity": { "type": "string" },
+          "used_station_ids": {
+            "type": "array",
+            "items": { "type": "integer" }
+          },
+          "used_station_count": { "type": "integer" }
         }
       }
     }

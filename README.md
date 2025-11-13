@@ -113,9 +113,18 @@ pytest -q
 docker compose up --build
 ```
 
-Der Dienst lauscht anschließend auf [http://127.0.0.1:5000](http://127.0.0.1:5000). Die `.env` wird automatisch eingebunden; stelle sicher, dass darin mindestens `GEOAPIFY_KEY` gesetzt ist.
+Der Dienst lauscht anschließend auf [http://127.0.0.1:5000](http://127.0.0.1:5000). Die `.env` wird automatisch eingebunden; stelle sicher, dass darin mindestens `GEOAPIFY_KEY` gesetzt ist. Für das integrierte Frontend kann zusätzlich `API_ACCESS_KEY` gesetzt werden – dieser Schlüssel wird clientseitig genutzt, um die API aufzurufen.
 
 ---
+
+## API-Zugriff & Swagger
+
+Alle öffentlich dokumentierten Endpunkte (`/api/data/coverage`, `/api/stations/nearest`, `/api/stations_in_radius`, `/api/reports/aggregate`) verlangen einen gültigen API-Key:
+
+* Für interne Views wird automatisch der in `.env` definierte `API_ACCESS_KEY` verwendet.
+* Für externe Tools (Swagger, Bruno, etc.) bitte im Admin-Panel (Register > „API-Keys“) einen neuen Schlüssel erzeugen.
+* Beim Aufruf im Header `X-API-Key: <dein_token>` mitsenden (alternativ als Query-Parameter `?api_key=<dein_token>`).
+* Die Swagger-UI unter `/docs` nutzt dieselben Endpunkte und akzeptiert den Header ebenfalls.
 
 ## API-Test mit Bruno
 
@@ -132,5 +141,5 @@ Zur schnellen Überprüfung der REST-Endpunkte liegt eine Bruno-Collection unter
 3. **Login/Register**: Admin- und API-Nutzer
 4. **Multilinguale Oberfläche**: Deutsch, Englisch, Spanisch, Französisch und Polnisch
 5. **Dark/Light Mode**: Umschaltbare UI-Themes
-6. **SwaggerUI**: Interaktive API-Dokumentation unter `http://127.0.1:5000/docs`
+6. **SwaggerUI**: Interaktive API-Dokumentation unter `http://127.0.0.1:5000/docs` (inkl. API-Key Header)
 7. **Docker-Support**: Einfache Bereitstellung via Docker Compose

@@ -3,5 +3,11 @@ meta {
 }
 
 auth {
-  mode: none
+  mode: apikey
+}
+
+auth:apikey {
+  key: X-API-Key
+  value: {{ApiKey}}
+  placement: header
 }

@@ -40,6 +40,9 @@
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <script>
+        window.APP_PUBLIC_API_KEY = "{{ public_api_key or '' }}";
+    </script>
 </head>
 <body class="theme-dark min-h-screen bg-slate-950 text-slate-100 font-display antialiased">
 {% set loader_text = ui['loading_overlay'] %}{% include '_loader.html' %}
