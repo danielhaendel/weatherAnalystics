@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from flask import current_app
 
 from ...db import get_db
 from ...importers import import_station_metadata
 from ...reports import haversine_km
+from ...reports import geo as reports_geo
 
 
 class StationServiceError(Exception):
@@ -79,4 +80,10 @@ def find_nearest_station(lat: float, lon: float) -> Dict[str, object]:
     return payload
 
 
-__all__ = ['StationServiceError', 'refresh_station_metadata', 'find_nearest_station']
+def list_stations_in_radius(lat: float, lon: float, radius: float, limit: int = 40) -> List[Dict[str, object]]:
+    conn = get_db()
+    stations = reports_geo._stations_within_radius(conn, lat, lon, radius, limit=limit)
+    return stations
+
+
+__all__ = ['StationServiceError', 'refresh_station_metadata', 'find_nearest_station', 'list_stations_in_radius']
